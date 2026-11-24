@@ -221,3 +221,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Wikipedia取得キャッシュ
+scripts/cache/
