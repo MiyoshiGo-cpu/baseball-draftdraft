@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1c4fbf"/>
+      <stop offset="1" stop-color="#081d4a"/>
+    </linearGradient>
+    <pattern id="stripe" width="44" height="44" patternUnits="userSpaceOnUse" patternTransform="rotate(-25)">
+      <rect width="8" height="44" fill="#ffffff" opacity="0.05"/>
+    </pattern>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <rect width="1024" height="1024" fill="url(#stripe)"/>
+  
+    <g transform="translate(512 455)">
+      <circle r="352" fill="#e3002b" opacity="0.18"/>
+      <circle r="330" fill="#0b2a66" stroke="#ffffff" stroke-width="16"/>
+      <circle cx="306.0" cy="0.0" r="11" fill="#fff6d6"/><circle cx="295.6" cy="79.2" r="11" fill="#f5b400"/><circle cx="265.0" cy="153.0" r="11" fill="#fff6d6"/><circle cx="216.4" cy="216.4" r="11" fill="#f5b400"/><circle cx="153.0" cy="265.0" r="11" fill="#fff6d6"/><circle cx="79.2" cy="295.6" r="11" fill="#f5b400"/><circle cx="0.0" cy="306.0" r="11" fill="#fff6d6"/><circle cx="-79.2" cy="295.6" r="11" fill="#f5b400"/><circle cx="-153.0" cy="265.0" r="11" fill="#fff6d6"/><circle cx="-216.4" cy="216.4" r="11" fill="#f5b400"/><circle cx="-265.0" cy="153.0" r="11" fill="#fff6d6"/><circle cx="-295.6" cy="79.2" r="11" fill="#f5b400"/><circle cx="-306.0" cy="0.0" r="11" fill="#fff6d6"/><circle cx="-295.6" cy="-79.2" r="11" fill="#f5b400"/><circle cx="-265.0" cy="-153.0" r="11" fill="#fff6d6"/><circle cx="-216.4" cy="-216.4" r="11" fill="#f5b400"/><circle cx="-153.0" cy="-265.0" r="11" fill="#fff6d6"/><circle cx="-79.2" cy="-295.6" r="11" fill="#f5b400"/><circle cx="-0.0" cy="-306.0" r="11" fill="#fff6d6"/><circle cx="79.2" cy="-295.6" r="11" fill="#f5b400"/><circle cx="153.0" cy="-265.0" r="11" fill="#fff6d6"/><circle cx="216.4" cy="-216.4" r="11" fill="#f5b400"/><circle cx="265.0" cy="-153.0" r="11" fill="#fff6d6"/><circle cx="295.6" cy="-79.2" r="11" fill="#f5b400"/>
+      <circle r="284" fill="#ffffff"/>
+      <path d="M0 0 L-72.0 -268.5 A278 278 0 0 1 72.0 -268.5 Z" fill="#e3002b"/><path d="M0 0 L72.0 -268.5 A278 278 0 0 1 196.6 -196.6 Z" fill="#dbe6fb"/><path d="M0 0 L196.6 -196.6 A278 278 0 0 1 268.5 -72.0 Z" fill="#ffffff"/><path d="M0 0 L268.5 -72.0 A278 278 0 0 1 268.5 72.0 Z" fill="#dbe6fb"/><path d="M0 0 L268.5 72.0 A278 278 0 0 1 196.6 196.6 Z" fill="#ffffff"/><path d="M0 0 L196.6 196.6 A278 278 0 0 1 72.0 268.5 Z" fill="#dbe6fb"/><path d="M0 0 L72.0 268.5 A278 278 0 0 1 -72.0 268.5 Z" fill="#ffffff"/><path d="M0 0 L-72.0 268.5 A278 278 0 0 1 -196.6 196.6 Z" fill="#dbe6fb"/><path d="M0 0 L-196.6 196.6 A278 278 0 0 1 -268.5 72.0 Z" fill="#ffffff"/><path d="M0 0 L-268.5 72.0 A278 278 0 0 1 -268.5 -72.0 Z" fill="#dbe6fb"/><path d="M0 0 L-268.5 -72.0 A278 278 0 0 1 -196.6 -196.6 Z" fill="#ffffff"/><path d="M0 0 L-196.6 -196.6 A278 278 0 0 1 -72.0 -268.5 Z" fill="#dbe6fb"/>
+      <circle r="278" fill="none" stroke="#0b2a66" stroke-width="6"/>
+      <g stroke="#0b2a66" stroke-width="4" opacity="0.35">
+        <line x1="0" y1="0" x2="-72.0" y2="-268.5"/><line x1="0" y1="0" x2="72.0" y2="-268.5"/><line x1="0" y1="0" x2="196.6" y2="-196.6"/><line x1="0" y1="0" x2="268.5" y2="-72.0"/><line x1="0" y1="0" x2="268.5" y2="72.0"/><line x1="0" y1="0" x2="196.6" y2="196.6"/><line x1="0" y1="0" x2="72.0" y2="268.5"/><line x1="0" y1="0" x2="-72.0" y2="268.5"/><line x1="0" y1="0" x2="-196.6" y2="196.6"/><line x1="0" y1="0" x2="-268.5" y2="72.0"/><line x1="0" y1="0" x2="-268.5" y2="-72.0"/><line x1="0" y1="0" x2="-196.6" y2="-196.6"/>
+      </g>
+      <circle r="128" fill="#ffffff" stroke="#c9d3e6" stroke-width="8"/>
+      <path d="M-62 -100 C-28 -40 -28 40 -62 100 M62 -100 C28 -40 28 40 62 100" fill="none" stroke="#e3002b" stroke-width="12" stroke-linecap="round" stroke-dasharray="2 24"/>
+      <path d="M-62 -100 C-28 -40 -28 40 -62 100 M62 -100 C28 -40 28 40 62 100" fill="none" stroke="#e3002b" stroke-width="5" opacity="0.55"/>
+    </g>
+    <path d="M512 214 L452 112 L572 112 Z" fill="#e3002b" stroke="#ffffff" stroke-width="14" stroke-linejoin="round"/>
+    <g transform="translate(512 852) rotate(-7)">
+      <rect x="-352" y="-84" width="704" height="162" rx="28" fill="#e3002b" stroke="#ffffff" stroke-width="14"/>
+      <text x="0" y="40" text-anchor="middle" font-family="'Liberation Sans', Arial, Helvetica, sans-serif" font-size="124" font-weight="900" font-style="italic" letter-spacing="10" fill="#ffffff">DRAFT</text>
+    </g>
+</svg>
