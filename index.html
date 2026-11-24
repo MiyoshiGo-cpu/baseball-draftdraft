@@ -181,6 +181,7 @@
               <span class="progress-text" id="team-progress">0 / 17</span>
             </div>
             <div class="progress" aria-hidden="true"><div class="progress-bar" id="team-progress-bar"></div></div>
+            <p class="team-hint">選手をタップすると、成績や守れるポジションを見られます。</p>
             <div id="team-body"></div>
           </section>
 
@@ -288,7 +289,10 @@
   <dialog class="sheet" id="place-dialog" aria-labelledby="pd-title">
     <form method="dialog" class="sheet-body" id="place-form">
       <div class="sheet-head">
-        <h2 class="sheet-title" id="pd-title"></h2>
+        <div class="sheet-head-row">
+          <h2 class="sheet-title" id="pd-title"></h2>
+          <button type="button" class="head-info-btn" id="pd-info">選手の詳細</button>
+        </div>
         <p class="sheet-meta" id="pd-meta"></p>
       </div>
       <div class="sheet-scroll">
@@ -307,6 +311,22 @@
         <button type="button" class="btn btn-primary" id="pd-confirm" disabled>指名する（変更不可）</button>
       </div>
     </form>
+  </dialog>
+
+  <!-- 選手の詳細 -->
+  <dialog class="sheet sheet-player" id="player-dialog" aria-labelledby="pl-name">
+    <div class="sheet-body">
+      <div class="sheet-head">
+        <div class="sheet-head-row">
+          <h2 class="sheet-title" id="pl-name"></h2>
+          <button type="button" class="head-close-btn" id="pl-close" aria-label="閉じる">
+            <svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <p class="sheet-meta" id="pl-meta"></p>
+      </div>
+      <div class="sheet-scroll" id="pl-body"></div>
+    </div>
   </dialog>
 
   <!-- 指名の発表（ドラフト会議の読み上げ風） -->
