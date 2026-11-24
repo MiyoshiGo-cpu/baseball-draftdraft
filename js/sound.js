@@ -85,6 +85,18 @@ export const sfx = {
     tone({ freq: 1046.5, type: "triangle", start: 0.48, dur: 0.6, gain: 0.14 });
     tone({ freq: 1318.5, type: "triangle", start: 0.48, dur: 0.6, gain: 0.1 });
   },
+  /** タイトルの「遊ぶ」 */
+  start() {
+    tone({ freq: 659.25, type: "triangle", dur: 0.1, gain: 0.16 });
+    tone({ freq: 987.77, type: "triangle", start: 0.08, dur: 0.22, gain: 0.16 });
+  },
+  /** プレイボール */
+  playball() {
+    tone({ freq: 392, type: "square", dur: 0.12, gain: 0.08 });
+    tone({ freq: 523.25, type: "square", start: 0.12, dur: 0.12, gain: 0.08 });
+    tone({ freq: 659.25, type: "square", start: 0.24, dur: 0.12, gain: 0.08 });
+    tone({ freq: 783.99, type: "triangle", start: 0.36, dur: 0.4, gain: 0.16 });
+  },
   /** できない操作の音 */
   error() {
     tone({ freq: 180, type: "sawtooth", dur: 0.12, gain: 0.08 });

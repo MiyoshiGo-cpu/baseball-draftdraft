@@ -2,7 +2,7 @@
 // 更新するときは、VERSION を上げて CHANGELOG の先頭に1件追加し、
 // `npm run changelog` で CHANGELOG.md を作り直す（npm test で一致を確認する）。
 
-export const VERSION = "1.0";
+export const VERSION = "1.1";
 
 /** 変更の種類 → 表示名 */
 export const CHANGE_TYPES = {
@@ -17,6 +17,20 @@ export const CHANGE_TYPES = {
  * { version: "1.1", date: "YYYY-MM-DD", title: "見出し", changes: [{ type: "new" | "improve" | "fix" | "data", text }] }
  */
 export const CHANGELOG = [
+  {
+    version: "1.1",
+    date: "2026-11-24",
+    title: "タイトル画面とメニュー",
+    changes: [
+      { type: "new", text: "タイトル画面（ナイターの球場をイメージした画面に「遊ぶ」ボタン。歴代の1位指名選手が流れる帯つき）" },
+      { type: "new", text: "メニュー画面（新しく始める・続きから・保存したチーム・遊び方・オプション・更新ログ・クレジット）" },
+      { type: "new", text: "ルール設定画面（ルールを決めて「プレイボール！」でゲーム開始）" },
+      { type: "new", text: "遊び方・オプション（効果音、データの削除と初期化）・クレジットの各画面" },
+      { type: "improve", text: "保存したチームと更新ログを、それぞれ独立した画面に変更" },
+      { type: "improve", text: "画面左上の戻るボタンとブラウザの「戻る」で、前の画面に戻れるように変更" },
+      { type: "improve", text: "ゲーム画面から設定パネルを外し、今回のルールを画面上部に表示" },
+    ],
+  },
   {
     version: "1.0",
     date: "2026-11-24",
@@ -44,7 +58,7 @@ export function changelogMarkdown() {
   const lines = [
     "# 更新ログ",
     "",
-    "ドラフトルーレットの更新履歴です。アプリでは、ヘッダーのバージョン表示（「更新ログ」）から見られます。",
+    "ドラフトルーレットの更新履歴です。アプリでは、タイトル画面のバージョン表示か、メニューの「更新ログ」から見られます。",
     "",
     "> このファイルは `js/version.js` から `npm run changelog` で生成しています。直接編集しないでください。",
     "",
