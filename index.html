@@ -13,14 +13,19 @@
 <body>
   <header class="app-header">
     <div class="app-header-inner">
-      <h1 class="app-title">
+      <div class="app-brand">
         <svg class="app-logo" viewBox="0 0 64 64" aria-hidden="true">
           <circle cx="32" cy="32" r="28" fill="currentColor" opacity=".12"/>
           <circle cx="32" cy="32" r="28" fill="none" stroke="currentColor" stroke-width="4"/>
           <path d="M18 12c6 6 6 34 0 40M46 12c-6 6-6 34 0 40" fill="none" stroke="var(--stitch)" stroke-width="4" stroke-dasharray="4 4"/>
         </svg>
-        <span>ドラフトルーレット</span>
-      </h1>
+        <div class="app-brand-text">
+          <h1 class="app-title">ドラフトルーレット</h1>
+          <button type="button" class="version-btn" id="btn-version" aria-haspopup="dialog">
+            <span class="version-num" id="app-version"></span><span class="version-link">更新ログ</span><span class="version-new" id="version-new" hidden>NEW</span>
+          </button>
+        </div>
+      </div>
       <div class="header-actions">
         <button type="button" id="btn-sound" class="tool-btn" aria-pressed="true">
           <svg viewBox="0 0 24 24" aria-hidden="true" class="icon icon-sound-on"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -172,6 +177,17 @@
       </div>
       <div class="sheet-scroll" id="sd-body"></div>
       <div class="sheet-actions" id="sd-actions" hidden></div>
+    </div>
+  </dialog>
+
+  <!-- 更新ログ -->
+  <dialog class="sheet" id="changelog-dialog" aria-labelledby="cl-title">
+    <div class="sheet-body">
+      <div class="sheet-head sheet-head-row">
+        <h2 class="sheet-title" id="cl-title">更新ログ</h2>
+        <button type="button" class="btn btn-small" id="cl-close">閉じる</button>
+      </div>
+      <div class="sheet-scroll" id="cl-body"></div>
     </div>
   </dialog>
 

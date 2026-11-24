@@ -55,7 +55,26 @@ npm test
 | `js/share.js` | テキストコピーとシェア画像（Canvas → PNG） |
 | `js/sound.js` | 効果音（Web Audio API。音声ファイルなし） |
 | `js/teams.js` | 当時の球団略称（`'85 南海` など） |
-| `tests/game.test.mjs` | テスト |
+| `js/version.js` | バージョンと更新ログ（アプリ内の表示と `CHANGELOG.md` の元） |
+| `tests/game.test.mjs` / `tests/version.test.mjs` | テスト |
+
+## バージョンと更新ログ
+
+- 現在のバージョン：**1.0**。ヘッダーのタイトルの下に表示していて、タップすると更新ログが開く。
+- 更新ログ：[CHANGELOG.md](CHANGELOG.md)（アプリ内の更新ログと同じ内容）
+- 前回見たときより新しいバージョンになっていると、ヘッダーに「NEW」が付く（更新ログを開くと消える）。
+- 番号の付け方：機能の追加・改善・修正やデータの更新は小数点以下を1つ上げる（1.1、1.2…）。大きな作り直しは整数部を上げる（2.0）。
+
+更新するときの手順：
+
+1. `js/version.js` の `VERSION` を上げ、`CHANGELOG` の先頭に1件追加する（変更の種類は `new`＝追加、`improve`＝改善、`fix`＝修正、`data`＝データ）。
+2. `CHANGELOG.md` を作り直す。
+
+   ```bash
+   npm run changelog
+   ```
+
+3. `npm test` を実行する。`CHANGELOG.md` と `js/version.js` が食い違っているとテストが失敗する。
 
 ## データ（`data/drafts.json`）
 

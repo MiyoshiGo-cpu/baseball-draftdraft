@@ -6,6 +6,7 @@ import * as storage from "./storage.js";
 import { buildShareText, copyText, drawShareImage, pickMeta, saveCanvasImage } from "./share.js";
 import { eraShort, shortYear } from "./teams.js";
 import { setSoundEnabled, sfx, unlockAudio } from "./sound.js";
+import { CHANGE_TYPES, CHANGELOG, VERSION, formatChangelogDate } from "./version.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) =>
@@ -101,6 +102,8 @@ function persist() {
 // ---------------------------------------------------------------------------
 
 async function init() {
+  // バージョン表示はデータの読み込みを待たずに出す
+  initVersion();
   try {
     const res = await fetch("data/drafts.json", { cache: "no-cache" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -160,7 +163,7 @@ function renderHeader() {
   btn.setAttribute("aria-pressed", String(on));
   btn.setAttribute("aria-label", on ? "効果音：ON" : "効果音：OFF");
   btn.title = on ? "効果音：ON（タップでOFF）" : "効果音：OFF（タップでON）";
-  $("footer-seed").textContent = `シード：${state.seed}`;
+  $("footer-seed").textContent = `バージョン ${VERSION} ・ シード：${state.seed}`;
 }
 
 function renderSettings() {
@@ -818,6 +821,53 @@ function onSavedClick(event) {
     if (state.status === "complete") renderResult();
     toast("削除しました");
   }
+}
+
+// ---- バージョン・更新ログ ----
+
+function initVersion() {
+  $("app-version").textContent = `v${VERSION}`;
+  $("btn-version").setAttribute("aria-label", `バージョン ${VERSION}。更新ログを開く`);
+  // 初めて見たバージョンを記録しておき、次に更新されたときだけ「NEW」を出す
+  if (storage.loadSeenVersion() === null) storage.saveSeenVersion(VERSION);
+  renderVersionBadge();
+
+  const dlg = $("changelog-dialog");
+  $("btn-version").addEventListener("click", openChangelog);
+  $("cl-close").addEventListener("click", () => dlg.close());
+  dlg.addEventListener("click", (e) => {
+    if (e.target === dlg) dlg.close();
+  });
+}
+
+function renderVersionBadge() {
+  const seen = storage.loadSeenVersion();
+  $("version-new").hidden = seen === null || seen === VERSION;
+}
+
+function openChangelog() {
+  $("cl-body").innerHTML = `
+    <p class="cl-current">現在のバージョン：<b>v${esc(VERSION)}</b></p>
+    <ol class="changelog">${CHANGELOG.map(
+      (entry) => `
+      <li class="cl-entry">
+        <div class="cl-head">
+          <span class="cl-version">v${esc(entry.version)}</span>
+          <span class="cl-date">${esc(formatChangelogDate(entry.date))}</span>
+        </div>
+        <p class="cl-title">${esc(entry.title)}</p>
+        <ul class="cl-changes">${entry.changes
+          .map(
+            (c) =>
+              `<li><span class="cl-type cl-type-${esc(c.type)}">${esc(CHANGE_TYPES[c.type] || c.type)}</span><span>${esc(c.text)}</span></li>`,
+          )
+          .join("")}</ul>
+      </li>`,
+    ).join("")}</ol>`;
+  $("changelog-dialog").showModal();
+  $("cl-body").scrollTop = 0;
+  storage.saveSeenVersion(VERSION);
+  renderVersionBadge();
 }
 
 // ---------------------------------------------------------------------------

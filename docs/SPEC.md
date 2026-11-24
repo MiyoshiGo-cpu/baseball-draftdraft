@@ -1,6 +1,6 @@
-# ドラフトルーレット（仮称）仕様書 v0.4
+# ドラフトルーレット（仮称）仕様書 v0.5
 
-作成日：2026-11-24（v0.2：リポジトリ名とクラウド開発の前提を反映／v0.3：Phase 0 の実装結果を反映／v0.4：Phase 1・1.5 の実装結果を反映）
+作成日：2026-11-24（v0.2：リポジトリ名とクラウド開発の前提を反映／v0.3：Phase 0 の実装結果を反映／v0.4：Phase 1・1.5 の実装結果を反映／v0.5：アプリのバージョン表示と更新ログを追加）
 
 リポジトリ：[MiyoshiGo-cpu/baseball-draftdraft](https://github.com/MiyoshiGo-cpu/baseball-draftdraft)（Public）
 
@@ -229,7 +229,14 @@ Phase 2 で成績などを足すときは、`playerKey` をキーにした別フ
 スマホを優先した縦1列のレイアウト（幅375pxを基準にし、タップ領域は44px以上）。画面が広いときは2列にする（左：ルーレット＋名鑑、右：マイチーム＋履歴）。
 
 ### 5.1 ヘッダー
-- タイトル、効果音 ON/OFF、リセット
+- タイトル、効果音 ON/OFF、保存一覧、リセット
+- タイトルの下にアプリのバージョン（例：`v1.0`）を表示する。タップすると更新ログを開く
+- 前回見たときより新しいバージョンになっていたら「NEW」を付ける（更新ログを開くと消える）
+
+### 5.1.1 バージョンと更新ログ
+- 最初の公開版を **1.0** とする。機能の追加・改善・修正やデータの更新では小数点以下を1つ上げ（1.1、1.2…）、大きな作り直しで整数部を上げる（2.0）
+- 更新ログは `js/version.js` に新しい順で書く（版・日付・見出し・変更内容。変更の種類は「追加」「改善」「修正」「データ」）
+- リポジトリの `CHANGELOG.md` は `npm run changelog` で `js/version.js` から生成する。両者が食い違うとテストが失敗する
 
 ### 5.2 設定パネル
 - §2.1 の項目。1回目のスピンの後は折りたたんで変更不可にする
@@ -342,18 +349,24 @@ baseball-draftdraft/
 │  ├─ game.js        ルール（純粋関数：配置可否、配置、パス、終了判定）
 │  ├─ roulette.js    抽選（シードつき乱数）
 │  ├─ storage.js     localStorage
-│  └─ share.js       テキストコピー（Phase 1.5で画像も）
+│  ├─ share.js       テキストコピー・シェア画像
+│  ├─ sound.js       効果音（Web Audio API）
+│  ├─ teams.js       当時の球団略称
+│  └─ version.js     バージョンと更新ログ
 ├─ data/
 │  └─ drafts.json
 ├─ scripts/
 │  ├─ build_drafts.py
 │  ├─ franchise_map.json
 │  ├─ overrides.json
-│  └─ report.md      （生成物）
+│  ├─ report.md      （生成物）
+│  └─ write_changelog.mjs  CHANGELOG.md の生成
 ├─ tests/
-│  └─ game.test.mjs
+│  ├─ game.test.mjs
+│  └─ version.test.mjs
 ├─ docs/
 │  └─ SPEC.md        （この文書）
+├─ CHANGELOG.md      （更新ログ。生成物）
 └─ README.md         （遊び方、出典、ライセンス）
 ```
 

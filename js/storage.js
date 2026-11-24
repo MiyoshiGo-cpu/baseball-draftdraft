@@ -4,6 +4,7 @@ export const KEYS = {
   settings: "dr.settings",
   current: "dr.current",
   saved: "dr.saved",
+  seenVersion: "dr.seenVersion",
 };
 
 export const SAVED_MAX = 50;
@@ -36,6 +37,10 @@ function remove(key) {
 
 export const loadSettings = () => read(KEYS.settings);
 export const saveSettings = (settings) => write(KEYS.settings, settings);
+
+/** 更新ログを最後に見たときのバージョン（未読の印を出すため）。 */
+export const loadSeenVersion = () => read(KEYS.seenVersion);
+export const saveSeenVersion = (version) => write(KEYS.seenVersion, version);
 
 export const loadCurrent = () => read(KEYS.current);
 export const saveCurrent = (state) => write(KEYS.current, state);
