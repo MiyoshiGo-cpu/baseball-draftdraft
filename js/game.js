@@ -12,8 +12,8 @@ export const POSITION_NAMES = {
 };
 export const CAPACITY = { lineup: 9, bench: 2, SP: 3, RP: 2, CL: 1 };
 export const KIND_LABELS = { lineup: "スタメン", bench: "控え", SP: "先発", RP: "中継ぎ", CL: "抑え" };
-export const PITCHER_KINDS = ["SP", "RP", "CL"];
-export const FIELDER_KINDS = ["lineup", "bench"];
+/** 枠の種類（表示の順番）。投手・野手の区別はなく、どの選手もどの枠にも入れられる（Beta v1.4〜）。 */
+export const SLOT_KINDS = ["lineup", "bench", "SP", "RP", "CL"];
 export const TOTAL_SLOTS = Object.values(CAPACITY).reduce((a, b) => a + b, 0); // 17
 export const MIN_PAIRS = TOTAL_SLOTS;
 
@@ -27,7 +27,6 @@ export const DEFAULT_SETTINGS = Object.freeze({
   passLimit: 3,
   includeIkusei: true,
   includeUnsigned: true,
-  pitcherFielderRule: "strict", // "strict"（厳格） | "loose"（ゆるめ）
   sound: true,
 });
 
@@ -95,7 +94,6 @@ export function normalizeSettings(input = {}) {
     passLimit: clampInt(s.passLimit, 0, PASS_LIMIT_MAX, DEFAULT_SETTINGS.passLimit),
     includeIkusei: Boolean(s.includeIkusei),
     includeUnsigned: Boolean(s.includeUnsigned),
-    pitcherFielderRule: s.pitcherFielderRule === "loose" ? "loose" : "strict",
     sound: Boolean(s.sound),
   };
 }
@@ -240,17 +238,14 @@ function usedCount(roster, kind) {
   return roster[kind].length;
 }
 
-/** 選手の区分と設定から、入れてよい枠の種類。 */
-export function allowedKinds(pick, settings) {
-  if (pick.twoWay) return [...FIELDER_KINDS, ...PITCHER_KINDS];
-  if (pick.group === "F") return [...FIELDER_KINDS];
-  if (settings.pitcherFielderRule === "loose") return [...FIELDER_KINDS, ...PITCHER_KINDS];
-  return [...PITCHER_KINDS];
+/** 入れてよい枠の種類。投手・野手の区別はしないので、どの選手も全部の枠に入れられる。 */
+export function allowedKinds() {
+  return [...SLOT_KINDS];
 }
 
 /** その選手を今入れられる枠の種類と空き数。例：[{ kind: "SP", free: 2 }] */
 export function openSlots(state, pick) {
-  return allowedKinds(pick, state.settings)
+  return allowedKinds()
     .map((kind) => ({ kind, free: CAPACITY[kind] - usedCount(state.roster, kind) }))
     .filter((s) => s.free > 0);
 }
@@ -270,10 +265,7 @@ export function pickableReason(state, pick, data) {
   const keys = new Set(rosterPickIds(state.roster).map((id) => data.picks.get(id)?.playerKey));
   if (keys.has(pick.playerKey)) return "同じ選手がチームにいます";
   if (openSlots(state, pick).length > 0) return null;
-  if (pick.twoWay) return "空き枠がありません";
-  if (pick.group === "F") return "野手枠が満杯";
-  if (state.settings.pitcherFielderRule === "loose") return "空き枠がありません";
-  return "投手枠が満杯";
+  return "空き枠がありません";
 }
 
 /** 今の一覧に、配置できる選手が1人でもいるか。 */

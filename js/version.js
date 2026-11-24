@@ -5,7 +5,7 @@
 
 /** "beta"（ベータ版）または "release"（正式版） */
 export const STAGE = "beta";
-export const VERSION = "1.3";
+export const VERSION = "1.4";
 
 export const STAGE_ORDER = ["beta", "release"];
 
@@ -37,6 +37,18 @@ export const CHANGE_TYPES = {
  *   changes: [{ type: "new" | "improve" | "change" | "fix" | "data", text }] }
  */
 export const CHANGELOG = [
+  {
+    stage: "beta",
+    version: "1.4",
+    date: "2026-11-24",
+    title: "投手と野手の区別をなくす",
+    changes: [
+      { type: "change", text: "投手と野手の区別をなくし、どの選手もスタメン・控え・先発・中継ぎ・抑えのどの枠にも入れられるように変更（糸井嘉男・雄平のように、投手から野手に転向して活躍した選手もいるため）" },
+      { type: "change", text: "ルール設定から「投手⇔野手の制限（厳格／ゆるめ）」をなくした" },
+      { type: "improve", text: "「投手」「内野手」などの登録ポジションと「二刀流」のバッジは、指名時の肩書きとして引き続き表示" },
+      { type: "improve", text: "遊び方の「大事なルール」を新しいルールに合わせて変更" },
+    ],
+  },
   {
     stage: "beta",
     version: "1.3",

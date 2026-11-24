@@ -58,12 +58,7 @@ function renderSetup() {
   $("set-pass").value = String(s.passLimit);
   $("set-ikusei").checked = s.includeIkusei;
   $("set-unsigned").checked = s.includeUnsigned;
-  for (const r of document.querySelectorAll('input[name="rule"]')) r.checked = r.value === s.pitcherFielderRule;
 
-  $("rule-help").textContent =
-    s.pitcherFielderRule === "strict"
-      ? "投手は投手枠だけ、野手はスタメン・控えだけに入れられます（二刀流の選手は例外）。"
-      : "投手もスタメン・控えに入れられます。野手を投手枠に入れることはできません。";
 
   const check = G.canStart(s, app.data);
   const pc = $("pair-count");
@@ -91,7 +86,6 @@ function onSetupChange(event) {
   } else if (t.id === "set-pass") patch = { passLimit: Number(t.value) };
   else if (t.id === "set-ikusei") patch = { includeIkusei: t.checked };
   else if (t.id === "set-unsigned") patch = { includeUnsigned: t.checked };
-  else if (t.name === "rule") patch = { pitcherFielderRule: t.value };
   if (!patch) return;
   ui.setup = G.normalizeSettings({ ...s, ...patch });
   saveRuleSettings(ui.setup);
@@ -557,7 +551,7 @@ function renderPlaceDialog() {
   $("pd-meta").textContent = `${shortYear(d.year)} ${draftShort(d)} ${pick.roundLabel}・${pick.pos}・${pick.from}`;
 
   const open = new Map(G.openSlots(state, pick).map((s) => [s.kind, s.free]));
-  const kinds = G.allowedKinds(pick, state.settings);
+  const kinds = G.allowedKinds();
   $("pd-kinds").innerHTML = kinds
     .map((kind) => {
       const free = open.get(kind) || 0;
