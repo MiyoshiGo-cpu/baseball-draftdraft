@@ -1,0 +1,2 @@
+# baseball-draftdraft
+NPBドラフト指名選手で17人を編成するルーレットゲーム
