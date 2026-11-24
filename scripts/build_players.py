@@ -82,7 +82,10 @@ NPB_TEAM_WORDS = [
 
 SECTION_RE = re.compile(r"^(={2,6})\s*(.+?)\s*\1\s*$", re.M)
 STAT_SECTIONS = {"bat": "年度別打撃成績", "pit": "年度別投手成績", "fld": "年度別守備成績"}
-SKIP_SECTION_WORDS = ("順位", "二軍", "ポストシーズン", "代表", "WBC", "オールスター", "独立", "マイナー", "MLB", "海外", "韓国", "台湾", "社会人", "大学", "高校", "監督", "コーチ")
+SKIP_SECTION_WORDS = (
+    "順位", "二軍", "ファーム", "ポストシーズン", "代表", "WBC", "オールスター", "独立", "BC", "四国", "マイナー",
+    "MLB", "海外", "韓国", "台湾", "KBO", "CPBL", "社会人", "大学", "高校", "監督", "コーチ",
+)
 
 
 def log(msg: str) -> None:
@@ -235,7 +238,8 @@ def stat_sections(wikitext: str) -> dict[str, str]:
     out: dict[str, str] = {}
     for i, m in enumerate(heads):
         level, name = len(m.group(1)), m.group(2)
-        key = next((k for k, w in STAT_SECTIONS.items() if name.startswith(w)), None)
+        # 「年度別打撃成績」のほか「NPB年度別投手成績」なども対象にする（二軍・独立リーグなどは除く）
+        key = next((k for k, w in STAT_SECTIONS.items() if w in name), None)
         if not key or key in out or any(w in name for w in SKIP_SECTION_WORDS):
             continue
         end = len(wikitext)
@@ -669,8 +673,9 @@ def main(argv=None) -> int:
         stats["一軍の打撃成績あり"] += bool(batting)
         stats["一軍の投手成績あり"] += bool(pitching)
         stats["守備成績あり"] += bool(fielding)
+        stats["一軍の成績あり（打撃か投手）"] += bool(batting or pitching)
         stats["タイトルあり"] += bool(titles_)
-        stats["成績の節はあるが読み取れない"] += bool(tables and not batting and not pitching and (tables.get("bat") or tables.get("pit")))
+        stats["成績の節はあるが NPB 一軍の行がない（海外のみなど）"] += bool(tables and not batting and not pitching and (tables.get("bat") or tables.get("pit")))
 
     generated_at = dt.datetime.now(JST).replace(microsecond=0).isoformat()
     data = {
@@ -704,7 +709,7 @@ def main(argv=None) -> int:
     lines += [f"| {k} | {v} |" for k, v in stats.items()]
     lines += ["", "## 抜き取り確認", "", "| 選手 | 確認内容 | 結果 |", "|---|---|---|"]
     lines += [f"| {k} | {label} | {'OK' if ok else '**NG**'} |" for k, label, ok in checks]
-    lines += ["", "## NPB の球団として扱わなかった表記（上位50）", "", "MLB などの成績は入れていません。NPB の球団なのにここに出ていたら、`NPB_TEAM_WORDS` に追加してください。", ""]
+    lines += ["", "## NPB の球団として扱わなかった表記（上位50）", "", "MLB・韓国・台湾などの成績は入れていません。NPB の球団なのにここに出ていたら、`NPB_TEAM_WORDS` に追加してください。", ""]
     lines += [f"- {t}（{n}行）" for t, n in unknown_teams.most_common(50)] or ["- なし"]
     REPORT_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
     size = OUTPUT_PATH.stat().st_size
