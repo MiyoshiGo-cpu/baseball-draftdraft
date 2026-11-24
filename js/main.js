@@ -7,6 +7,7 @@ import { app, loadData, setSound, soundOn } from "./app.js";
 import { setSoundEnabled, sfx, unlockAudio } from "./sound.js";
 import { gameScreen, initPlay, setupScreen } from "./screens/play.js";
 import { initPlayer } from "./screens/player.js";
+import { initCareer } from "./screens/career.js";
 import {
   changelogScreen,
   creditsScreen,
@@ -133,6 +134,7 @@ function init() {
   initPlay();
   initPages();
   initPlayer();
+  initCareer();
 
   $("bar-back").addEventListener("click", () => {
     unlockAudio();
@@ -147,6 +149,11 @@ function init() {
   });
   $("btn-retry").addEventListener("click", () => {
     if (activeRoute) onRoute(activeRoute, SCREENS[activeRoute.name]);
+  });
+
+  // 画面を移ったら、開いているシート（選手の詳細・年度選びなど）を閉じる
+  window.addEventListener("hashchange", () => {
+    for (const dlg of document.querySelectorAll("dialog[open]")) dlg.close();
   });
 
   renderSoundButton();

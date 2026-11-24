@@ -8,6 +8,7 @@ import { eraShort } from "./teams.js";
 import { setSoundEnabled } from "./sound.js";
 import { esc, fileStamp, formatDate, toast } from "./dom.js";
 import { VERSION_LABEL } from "./version.js";
+import { careerTeam } from "./career.js";
 
 export const app = {
   /** @type {ReturnType<typeof G.indexData> | null} */
@@ -177,8 +178,17 @@ export function teamId(state) {
   return `t${seedToState(key).toString(36)}${state.usedPairs.length.toString(36)}`;
 }
 
+/** 答え合わせ（選手データを読み込み済みのときだけ。読み込みを待つとコピーや共有が許可されないことがあるため）。 */
+function careerIfLoaded(snapshot) {
+  try {
+    return app.players ? careerTeam(snapshot, app.players) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function shareText(snapshot) {
-  const ok = await copyText(buildShareText(snapshot, slotShort));
+  const ok = await copyText(buildShareText(snapshot, slotShort, careerIfLoaded(snapshot)));
   toast(ok ? "テキストをコピーしました" : "コピーできませんでした");
 }
 
@@ -187,6 +197,7 @@ export async function shareImage(snapshot, date = new Date()) {
     const canvas = drawShareImage(snapshot, slotShort, {
       dateText: formatDate(date.toISOString()),
       footer: `ドラフトルーレット ${VERSION_LABEL}`,
+      career: careerIfLoaded(snapshot),
     });
     const how = await saveCanvasImage(canvas, `draft-roulette-${fileStamp(date)}.png`);
     if (how === "downloaded") toast("画像を保存しました");

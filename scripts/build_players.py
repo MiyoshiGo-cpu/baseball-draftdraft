@@ -499,7 +499,9 @@ def innings(text: str):
 
 
 def header_key(cell) -> str:
-    return re.sub(r"\s+", "", bd.cell_text(cell, line_sep=""))
+    # 縦書きの見出しは長音を「丨」「｜」で書く（セ丨ブ → セーブ、ホ丨ルド → ホールド）
+    text = re.sub(r"\s+", "", bd.cell_text(cell, line_sep=""))
+    return re.sub(r"[丨｜|]", "ー", text)
 
 
 def is_npb_team(team: str) -> bool:

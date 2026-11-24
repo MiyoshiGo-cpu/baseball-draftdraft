@@ -6,6 +6,8 @@ import { sfx, unlockAudio } from "../sound.js";
 import { CHANGE_TYPES, CHANGELOG, VERSION_ID, VERSION_LABEL, formatChangelogDate, versionLabel } from "../version.js";
 import { $, esc, formatDate, setBarTitle, toast } from "../dom.js";
 import { go, goUp } from "../router.js";
+import { showCareer } from "./career.js";
+import { careerSummary } from "../career.js";
 import {
   app,
   discardGame,
@@ -229,7 +231,9 @@ function renderSavedList() {
     ? `<ul class="saved-list">${list
         .map((x) => {
           const names = x.team.lineup.map((r) => r.player?.name).filter(Boolean).join(" / ");
-          return `<li><button type="button" class="saved-item" data-saved="${esc(x.id)}">
+          const r = x.rating;
+          return `<li><button type="button" class="saved-item${r ? " has-rating" : ""}" data-saved="${esc(x.id)}">
+              ${r ? `<span class="saved-rating grade grade-${esc(r.rank)}" aria-label="総合力 ${esc(r.rank)}"><b>${esc(r.rank)}</b><small>${Number(r.score) || 0}</small></span>` : ""}
               <span class="saved-date">${esc(formatDate(x.savedAt))}</span>
               <span class="saved-stats">スピン${x.team.spins}回・パス${x.team.passes}回</span>
               <span class="saved-names">${esc(names)}</span>
@@ -259,11 +263,26 @@ function renderSavedDetail(id) {
       }</p>
       <div class="team">${teamHTML(entry.team)}</div>
     </div>
+    <section class="card career" id="saved-career" data-career-root aria-label="答え合わせ"></section>
     <div class="saved-actions">
       <button type="button" class="btn btn-danger" data-saved-act="delete" data-id="${esc(entry.id)}">削除</button>
       <button type="button" class="btn" data-saved-act="copy" data-id="${esc(entry.id)}">テキストでコピー</button>
       <button type="button" class="btn btn-primary" data-saved-act="image" data-id="${esc(entry.id)}">画像を保存</button>
     </div>`;
+  let team = entry.team;
+  showCareer("saved-career", team, {
+    onChange(pickId, year) {
+      const careerYears = { ...(team.careerYears || {}) };
+      if (year === null) delete careerYears[pickId];
+      else careerYears[pickId] = year;
+      team = { ...team, careerYears };
+      storage.updateSaved(entry.id, (e) => ({ ...e, team: { ...e.team, careerYears } }));
+      return team;
+    },
+    onRender(result) {
+      storage.updateSaved(entry.id, (e) => ({ ...e, rating: careerSummary(result) }));
+    },
+  });
 }
 
 function onSavedAction(btn) {

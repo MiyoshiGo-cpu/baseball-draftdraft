@@ -58,3 +58,10 @@ test("雄平（高井雄平として指名）：投手と外野手の両方の�
   assert.ok(pit("高井雄平").length > 0 && bat("高井雄平").length > 0);
   assert.ok(p.fielding["外野"] > p.fielding["投手"]);
 });
+
+test("セーブとホールド（縦書きの見出し「セ丨ブ」「ホ丨ルド」）を読み取れている", () => {
+  assert.equal(pit("岩瀬仁紀").find((r) => r.year === 2005).SV, 46);
+  assert.equal(pit("浅尾拓也").find((r) => r.year === 2011).HLD, 45);
+  assert.equal(pit("江夏豊").find((r) => r.year === 1968).SV, null, "セーブの記録がない時代");
+  assert.equal(bat("糸井嘉男").find((r) => r.year === 2014).team, "オリックス");
+});

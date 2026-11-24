@@ -3,6 +3,8 @@
 
 import { KIND_LABELS } from "./game.js";
 import { eraShort, shortYear } from "./teams.js";
+import { statLine } from "./career.js";
+import { fmtEra, fmtRate } from "./stats.js";
 
 const EMPTY = "―";
 
@@ -12,8 +14,18 @@ export function pickMeta(player, franchiseShort = "") {
   return `${shortYear(player.year)} ${eraShort(player.teamName, franchiseShort)} ${player.roundLabel}`;
 }
 
-/** 共有テキスト（仕様書 §5.8 の形式）。snapshot は game.teamSnapshot() の戻り値。 */
-export function buildShareText(snapshot, shortOf = () => "") {
+/** 「総合力 A（60点）打線 57・投手陣 65」 */
+export function ratingText(career) {
+  if (!career) return "";
+  const { total, batting, pitching } = career;
+  return `総合力 ${total.rank}（${total.score}点）打線 ${batting.score}・投手陣 ${pitching.score}`;
+}
+
+/**
+ * 共有テキスト（仕様書 §5.8 の形式）。snapshot は game.teamSnapshot() の戻り値。
+ * career（career.careerTeam() の戻り値）があれば、最後に総合力の行を足す。
+ */
+export function buildShareText(snapshot, shortOf = () => "", career = null) {
   const name = (p) => (p ? p.name : EMPTY);
   const lines = ["【ドラフトルーレット】"];
   for (const row of snapshot.lineup) {
@@ -28,6 +40,7 @@ export function buildShareText(snapshot, shortOf = () => "") {
   lines.push(`中継ぎ ${snapshot.RP.map(name).join(" / ")}`);
   lines.push(`抑え ${snapshot.CL.map(name).join(" / ")}`);
   lines.push(`スピン${snapshot.spins}回・パス${snapshot.passes}回${snapshot.complete ? "" : "（未完成）"}`);
+  if (career) lines.push(ratingText(career));
   return lines.join("\n");
 }
 
@@ -67,6 +80,7 @@ const IMG = {
   pad: 64,
   bg: "#ffffff",
   ink: "#0f1b2d",
+  ink2: "#33415c",
   muted: "#667085",
   navy: "#0b2a66",
   navy2: "#163f99",
@@ -104,15 +118,68 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-/** チームをシェア画像として canvas に描く（白地に紺と赤）。描いた canvas を返す。 */
-export function drawShareImage(snapshot, shortOf = () => "", { dateText = "", footer = "ドラフトルーレット" } = {}) {
+const GRADE_COLORS = {
+  S: ["#f5b400", "#5a3c00"],
+  A: ["#e3002b", "#ffffff"],
+  B: ["#1f5bd8", "#ffffff"],
+  C: ["#08857f", "#ffffff"],
+  D: ["#8a94a6", "#ffffff"],
+  E: ["#eef1f6", "#667085"],
+};
+
+/** ランクの角丸（S〜E と点数）。right は右端、cy は縦の中心。 */
+function drawGrade(ctx, right, cy, rank, score, size = 64) {
+  const [bg, fg] = GRADE_COLORS[rank] || GRADE_COLORS.E;
+  const x = right - size;
+  ctx.fillStyle = bg;
+  roundRect(ctx, x, cy - size / 2, size, size, 12);
+  ctx.fill();
+  ctx.fillStyle = fg;
+  ctx.textAlign = "center";
+  const withScore = score !== "" && score !== null && score !== undefined;
+  setFont(ctx, Math.round(size * (withScore ? 0.46 : 0.56)), 900);
+  ctx.fillText(rank, x + size / 2, withScore ? cy - size * 0.1 : cy + 1);
+  if (withScore) {
+    setFont(ctx, Math.round(size * 0.24), 800);
+    ctx.fillText(String(score), x + size / 2, cy + size * 0.29);
+  }
+  ctx.textAlign = "left";
+}
+
+/** 成績の並び（リーグ1位は赤の太字）を maxWidth に収めて描く。 */
+function drawStatParts(ctx, parts, x, cy, maxWidth, size) {
+  const gap = 12;
+  let s = size;
+  const width = () =>
+    parts.reduce((a, p) => {
+      setFont(ctx, s, p.lead ? 900 : 700);
+      return a + ctx.measureText(p.text).width;
+    }, 0) +
+    gap * (parts.length - 1);
+  while (s > 12 && width() > maxWidth) s -= 1;
+  let cx = x;
+  for (const p of parts) {
+    setFont(ctx, s, p.lead ? 900 : 700);
+    ctx.fillStyle = p.lead ? IMG.red : IMG.ink2;
+    ctx.fillText(p.text, cx, cy);
+    cx += ctx.measureText(p.text).width + gap;
+  }
+}
+
+/**
+ * チームをシェア画像として canvas に描く（白地に紺と赤）。描いた canvas を返す。
+ * career（career.careerTeam() の戻り値）があれば、総合力と各選手のキャリアハイも描く。
+ */
+export function drawShareImage(snapshot, shortOf = () => "", { dateText = "", footer = "ドラフトルーレット", career = null } = {}) {
   const { width: W, pad } = IMG;
   const headerH = 210;
-  const rowH = 66;
-  const smallRowH = 60;
+  const ratingH = career ? 236 : 0;
+  const rowH = career ? 96 : 66;
+  const smallRowH = career ? 90 : 60;
   const headH = 64;
   const lowerRows = snapshot.bench.length + snapshot.SP.length + snapshot.RP.length + snapshot.CL.length;
-  const H = headerH + 24 + headH + rowH * 9 + 20 + headH * 2 + smallRowH * lowerRows + 120;
+  const H = headerH + ratingH + 24 + headH + rowH * 9 + 20 + headH * 2 + smallRowH * lowerRows + 120;
+  const slotOf = (p) => (career && p ? career.slots.find((s) => s.player?.pickId === p.pickId) : null);
 
   const canvas = document.createElement("canvas");
   canvas.width = W;
@@ -176,7 +243,77 @@ export function drawShareImage(snapshot, shortOf = () => "", { dateText = "", fo
     ctx.restore();
   }
 
-  let y = headerH + 24;
+  let y = headerH + 10;
+  if (career) {
+    // 総合力（答え合わせ）
+    const top = y + 24;
+    const boxH = ratingH - 34;
+    ctx.fillStyle = IMG.soft;
+    roundRect(ctx, pad, top, W - pad * 2, boxH, 20);
+    ctx.fill();
+    const { total, batting, pitching, sums } = career;
+    const [bg, fg] = GRADE_COLORS[total.rank] || GRADE_COLORS.E;
+    const ex = pad + 96;
+    const ey = top + boxH / 2;
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    ctx.arc(ex, ey, 74, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.6)";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.arc(ex, ey, 66, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = fg;
+    ctx.textAlign = "center";
+    setFont(ctx, 20, 900);
+    ctx.fillText("総合力", ex, ey - 40);
+    setFont(ctx, 72, 900);
+    ctx.fillText(total.rank, ex, ey + 4);
+    setFont(ctx, 22, 900);
+    ctx.fillText(`${total.score}/100`, ex, ey + 46);
+    ctx.textAlign = "left";
+
+    const tx = pad + 200;
+    const right = W - pad - 28;
+    ctx.fillStyle = IMG.navy;
+    setFont(ctx, 26, 900);
+    ctx.fillText("答え合わせ（キャリアハイで採点）", tx, top + 38);
+    const bar = (label, part, cy) => {
+      ctx.fillStyle = IMG.navy;
+      setFont(ctx, 26, 900);
+      ctx.fillText(label, tx, cy);
+      const bx = tx + 104;
+      const bw = right - bx - 130;
+      ctx.fillStyle = "#ffffff";
+      roundRect(ctx, bx, cy - 9, bw, 18, 9);
+      ctx.fill();
+      ctx.fillStyle = (GRADE_COLORS[part.rank] || GRADE_COLORS.E)[0];
+      roundRect(ctx, bx, cy - 9, Math.max(18, (bw * part.score) / 100), 18, 9);
+      ctx.fill();
+      ctx.fillStyle = IMG.ink;
+      setFont(ctx, 32, 900);
+      ctx.textAlign = "right";
+      ctx.fillText(String(part.score), right - 62, cy + 1);
+      ctx.textAlign = "left";
+      drawGrade(ctx, right, cy, part.rank, "", 44);
+    };
+    bar("打線", batting, top + 90);
+    bar("投手陣", pitching, top + 142);
+    ctx.fillStyle = IMG.muted;
+    fitText(
+      ctx,
+      `打率${fmtRate(sums.AVG)}・${sums.HR}本・${sums.RBI}打点 ／ ${sums.W}勝・${sums.SV}S・${sums.HLD}H・防御率${fmtEra(sums.ERA)}`,
+      tx,
+      top + 186,
+      right - tx,
+      22,
+      700,
+    );
+    y += ratingH;
+  }
+  y += 14;
+
   const sectionHead = (label) => {
     const cy = y + headH / 2;
     ctx.fillStyle = IMG.navy;
@@ -202,7 +339,34 @@ export function drawShareImage(snapshot, shortOf = () => "", { dateText = "", fo
     ctx.lineTo(W - pad, y + h);
     ctx.stroke();
   };
-  const metaWidth = 360;
+  const metaWidth = career ? 300 : 360;
+  const gradeW = career ? 76 : 0;
+
+  /** 名前と指名情報（1行目）、キャリアハイ（2行目）、ランク（右端）を描く。 */
+  const playerCell = (p, nameX, cy, nameSize, metaSize) => {
+    const slot = slotOf(p);
+    const right = W - pad - gradeW;
+    const line1 = career ? cy - 18 : cy;
+    ctx.fillStyle = IMG.ink;
+    fitText(ctx, p.name, nameX, line1, right - nameX - metaWidth - 16, nameSize, 900);
+    ctx.fillStyle = IMG.muted;
+    fitText(ctx, pickMeta(p, shortOf(p.franchiseId)), right, line1, metaWidth, metaSize, 700, "right");
+    if (!career) return;
+    const line2 = cy + 22;
+    if (slot?.season) {
+      ctx.fillStyle = IMG.navy;
+      setFont(ctx, 24, 900);
+      const yearText = `${slot.season.year}`;
+      ctx.fillText(yearText, nameX, line2);
+      const sx = nameX + ctx.measureText(yearText).width + 14;
+      drawStatParts(ctx, statLine(slot.season, slot.kind), sx, line2, right - sx - 12, 24);
+    } else {
+      ctx.fillStyle = IMG.muted;
+      setFont(ctx, 22, 500);
+      ctx.fillText(slot?.type === "pit" ? "一軍の投手成績なし" : "一軍の打撃成績なし", nameX, line2);
+    }
+    drawGrade(ctx, W - pad, cy, slot?.rank || "E", slot?.score ?? 0, 62);
+  };
 
   sectionHead("スタメン");
   for (const row of snapshot.lineup) {
@@ -227,10 +391,7 @@ export function drawShareImage(snapshot, shortOf = () => "", { dateText = "", fo
     }
     ctx.textAlign = "left";
     if (row.player) {
-      ctx.fillStyle = IMG.ink;
-      fitText(ctx, row.player.name, pad + 162, cy, W - pad * 2 - 162 - metaWidth - 16, 40, 900);
-      ctx.fillStyle = IMG.muted;
-      fitText(ctx, pickMeta(row.player, shortOf(row.player.franchiseId)), W - pad, cy, metaWidth, 26, 700, "right");
+      playerCell(row.player, pad + 162, cy, 40, 26);
     } else {
       ctx.fillStyle = IMG.muted;
       setFont(ctx, 32, 400);
@@ -248,10 +409,7 @@ export function drawShareImage(snapshot, shortOf = () => "", { dateText = "", fo
       setFont(ctx, 26, 900);
       ctx.fillText(label, pad, cy);
       if (p) {
-        ctx.fillStyle = IMG.ink;
-        fitText(ctx, p.name, pad + 138, cy, W - pad * 2 - 138 - metaWidth - 16, 36, 900);
-        ctx.fillStyle = IMG.muted;
-        fitText(ctx, pickMeta(p, shortOf(p.franchiseId)), W - pad, cy, metaWidth, 24, 700, "right");
+        playerCell(p, pad + 138, cy, 36, 24);
       } else {
         ctx.fillStyle = IMG.muted;
         setFont(ctx, 30, 400);
@@ -278,7 +436,7 @@ export function drawShareImage(snapshot, shortOf = () => "", { dateText = "", fo
   ctx.fillStyle = "rgba(255,255,255,0.75)";
   setFont(ctx, 19, 500);
   ctx.textAlign = "right";
-  ctx.fillText("指名データ：Wikipedia日本語版（CC BY-SA 4.0）", W - pad, H - 35);
+  ctx.fillText(career ? "指名・成績データ：Wikipedia日本語版（CC BY-SA 4.0）" : "指名データ：Wikipedia日本語版（CC BY-SA 4.0）", W - pad, H - 35);
   ctx.textAlign = "left";
   return canvas;
 }

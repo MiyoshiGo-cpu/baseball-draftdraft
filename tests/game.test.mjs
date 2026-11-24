@@ -29,6 +29,7 @@ import {
   place,
   restoreState,
   rosterPickIds,
+  setCareerYear,
   spin,
   teamSnapshot,
   updateSettings,
@@ -462,6 +463,26 @@ describe("保存と共有", () => {
     const st = createGame(S(), 1);
     const bad = { ...st, roster: { ...st.roster, SP: ["存在しない"] } };
     assert.equal(restoreState(bad, data), null);
+  });
+
+  test("答え合わせで選び直した年度は、保存して戻しても残る（チームにいない選手の分は捨てる）", () => {
+    const data = makeData();
+    let st = createGame(S({ passLimit: 1 }), 21);
+    while (st.status !== "complete" && st.status !== "stuck") st = autoSkipOrPlace(spin(st, data), data);
+    const [first, second] = rosterPickIds(st.roster);
+    assert.throws(() => setCareerYear(st, "存在しない", 2000), GameError);
+    assert.throws(() => setCareerYear(st, first, "2000"), GameError);
+    let changed = setCareerYear(st, first, 2003);
+    changed = setCareerYear(changed, second, 1999);
+    changed = setCareerYear(changed, second, null);
+    assert.deepEqual(changed.careerYears, { [first]: 2003 });
+    assert.deepEqual(st.careerYears, {}, "元の状態は書き換えない");
+    assert.deepEqual(teamSnapshot(changed, data).careerYears, { [first]: 2003 });
+    const raw = JSON.parse(JSON.stringify({ ...changed, careerYears: { ...changed.careerYears, ghost: 2001, [second]: "x" } }));
+    assert.deepEqual(restoreState(raw, data).careerYears, { [first]: 2003 });
+    const old = JSON.parse(JSON.stringify(st));
+    delete old.careerYears; // Beta v1.5 までの保存データ
+    assert.deepEqual(restoreState(old, data).careerYears, {});
   });
 
   test("テキストは仕様書の形式", () => {
