@@ -5,7 +5,7 @@
 
 /** "beta"（ベータ版）または "release"（正式版） */
 export const STAGE = "beta";
-export const VERSION = "1.2";
+export const VERSION = "1.3";
 
 export const STAGE_ORDER = ["beta", "release"];
 
@@ -37,6 +37,18 @@ export const CHANGE_TYPES = {
  *   changes: [{ type: "new" | "improve" | "change" | "fix" | "data", text }] }
  */
 export const CHANGELOG = [
+  {
+    stage: "beta",
+    version: "1.3",
+    date: "2026-11-24",
+    title: "ホーム画面のアプリアイコン",
+    changes: [
+      { type: "new", text: "iPhone・Android のホーム画面に追加できるアプリアイコン（ルーレットと野球ボールに「DRAFT」の帯のデザイン）" },
+      { type: "new", text: "ホーム画面から開くと、ブラウザのバーがない全画面のアプリとして起動（ホーム画面での名前は「ドラルー」）" },
+      { type: "new", text: "オプション画面に「ホーム画面に追加する」方法の案内" },
+      { type: "improve", text: "ブラウザのタブのアイコンを、新しいアプリアイコンに変更" },
+    ],
+  },
   {
     stage: "beta",
     version: "1.2",

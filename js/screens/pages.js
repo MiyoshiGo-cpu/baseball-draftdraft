@@ -308,6 +308,46 @@ export const creditsScreen = {
 // オプション
 // ===========================================================================
 
+/** ホーム画面から（アプリとして）開いているか。 */
+function isStandalone() {
+  return Boolean(window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone);
+}
+
+function homeScreenCard() {
+  if (isStandalone()) {
+    return `
+    <section class="card option-card home-card">
+      <h2 class="card-title">ホーム画面のアプリ</h2>
+      <div class="home-card-row">
+        <img class="home-card-icon" src="icons/apple-touch-icon.png" alt="" width="60" height="60">
+        <p class="home-card-text"><b>ホーム画面から起動しています。</b><br>新しいバージョンは、アプリを開き直すと反映されます。</p>
+      </div>
+    </section>`;
+  }
+  return `
+    <section class="card option-card home-card">
+      <h2 class="card-title">ホーム画面に追加する</h2>
+      <div class="home-card-row">
+        <img class="home-card-icon" src="icons/apple-touch-icon.png" alt="" width="60" height="60">
+        <p class="home-card-text">ホーム画面に追加すると、アプリのようにアイコンから全画面で開けます。</p>
+      </div>
+      <div class="home-steps">
+        <p class="home-steps-title">iPhone（Safari）</p>
+        <ol>
+          <li>このページを Safari で開く</li>
+          <li>画面下の共有ボタン（四角から上向きの矢印）をタップ</li>
+          <li>「ホーム画面に追加」→「追加」をタップ</li>
+        </ol>
+        <p class="home-steps-title">Android（Chrome）</p>
+        <ol>
+          <li>右上のメニュー（︙）をタップ</li>
+          <li>「ホーム画面に追加」または「アプリをインストール」をタップ</li>
+        </ol>
+      </div>
+      <p class="home-note">ホーム画面から開いたアプリは、ブラウザとは別にデータを保存します。ブラウザで進めたゲームや保存したチームは引き継がれません。</p>
+    </section>`;
+}
+
 function renderOptions() {
   const { state, data } = app;
   const savedCount = storage.loadSaved().length;
@@ -315,6 +355,7 @@ function renderOptions() {
   const players = data.picks.size;
   const generated = data.meta?.generatedAt ? formatDate(data.meta.generatedAt).slice(0, 10) : "―";
   $("options-body").innerHTML = `
+    ${homeScreenCard()}
     <section class="card option-card">
       <h2 class="card-title">サウンド</h2>
       <label class="switch">

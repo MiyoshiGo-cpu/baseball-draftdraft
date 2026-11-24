@@ -1,6 +1,6 @@
-# ドラフトルーレット（仮称）仕様書 v0.7
+# ドラフトルーレット（仮称）仕様書 v0.8
 
-作成日：2026-11-24（v0.2：リポジトリ名とクラウド開発の前提を反映／v0.3：Phase 0 の実装結果を反映／v0.4：Phase 1・1.5 の実装結果を反映／v0.5：アプリのバージョン表示と更新ログを追加／v0.6：アプリ v1.1 のタイトル画面・メニューと画面構成を反映／v0.7：Beta v1.2 のドラフト会議の演出・デザイン・バージョン表記を反映）
+作成日：2026-11-24（v0.2：リポジトリ名とクラウド開発の前提を反映／v0.3：Phase 0 の実装結果を反映／v0.4：Phase 1・1.5 の実装結果を反映／v0.5：アプリのバージョン表示と更新ログを追加／v0.6：アプリ v1.1 のタイトル画面・メニューと画面構成を反映／v0.7：Beta v1.2 のドラフト会議の演出・デザイン・バージョン表記を反映／v0.8：Beta v1.3 のホーム画面用アイコンと全画面起動を反映）
 
 リポジトリ：[MiyoshiGo-cpu/baseball-draftdraft](https://github.com/MiyoshiGo-cpu/baseball-draftdraft)（Public）
 
@@ -254,7 +254,7 @@ Phase 2 で成績などを足すときは、`playerKey` をキーにした別フ
 | ゲーム | `#/game` | §5.3〜§5.8。今回のルールを上部に小さく表示する。設定はここでは変えない |
 | 保存したチーム | `#/saved`、`#/saved/<id>` | 一覧と詳細（テキストコピー・画像保存・削除） |
 | 遊び方 | `#/howto` | 流れ、枠の構成、大事なルール、コツ |
-| オプション | `#/options` | 効果音、進行中のゲームの破棄、保存したチームの全削除、全データの初期化、バージョンと収録データの情報 |
+| オプション | `#/options` | ホーム画面に追加する方法の案内（ホーム画面から開いているときはその旨を表示）、効果音、進行中のゲームの破棄、保存したチームの全削除、全データの初期化、バージョンと収録データの情報 |
 | 更新ログ | `#/changelog` | §5.1.1 |
 | クレジット | `#/credits` | §11 の内容 |
 
@@ -330,6 +330,14 @@ Phase 2 で成績などを足すときは、`playerKey` をキーにした別フ
 スピン18回・パス1回
 ```
 
+### 5.9 ホーム画面に追加（Beta v1.3〜）
+- iPhone・Android のホーム画面に追加できるようにする（`manifest.webmanifest`、`apple-touch-icon`）
+- アイコン：紺地にルーレット（12球団ぶんの区切り、真上が赤）と中央の野球ボール、赤い針、「DRAFT」の赤い帯。サイズは 180px（iPhone）、192px・512px、丸く切り抜かれる端末用の 512px（中身を80%に縮めたもの）、32px（ファビコン）。元の SVG は `scripts/build_icons.mjs` にあり、`npm run icons` で PNG を作り直す
+- ホーム画面での名前は「ドラルー」（6文字程度を超えると iPhone で「…」と切れるため短くする）
+- アイコンから開くと全画面（`display: standalone`）で起動する。iPhone では時計などの上端部分を紺にする（`apple-mobile-web-app-status-bar-style: black-translucent` と safe-area の余白）
+- オフライン対応（Service Worker）はしない。更新がすぐ反映されるようにするため
+- ホーム画面から開いたアプリはブラウザとは別にデータを保存する（iPhone の仕様）ことを、オプション画面で案内する
+
 ---
 
 ## 6. 状態モデルと保存
@@ -383,6 +391,8 @@ Phase 2 で成績などを足すときは、`playerKey` をキーにした別フ
 ```
 baseball-draftdraft/
 ├─ index.html
+├─ manifest.webmanifest  ホーム画面に追加したときの設定
+├─ icons/            アプリアイコン（scripts/build_icons.mjs で生成）
 ├─ css/
 │  └─ style.css
 ├─ js/
@@ -407,11 +417,13 @@ baseball-draftdraft/
 │  ├─ franchise_map.json
 │  ├─ overrides.json
 │  ├─ report.md      （生成物）
-│  └─ write_changelog.mjs  CHANGELOG.md の生成
+│  ├─ write_changelog.mjs  CHANGELOG.md の生成
+│  └─ build_icons.mjs  アプリアイコンの生成
 ├─ tests/
 │  ├─ game.test.mjs
 │  ├─ version.test.mjs
-│  └─ router.test.mjs
+│  ├─ router.test.mjs
+│  └─ pwa.test.mjs
 ├─ docs/
 │  └─ SPEC.md        （この文書）
 ├─ CHANGELOG.md      （更新ログ。生成物）

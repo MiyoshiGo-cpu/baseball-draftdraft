@@ -430,6 +430,18 @@ b {
     #ffffff;
 }
 
+/* ホーム画面から開いたとき、時計などの上端部分を紺にして文字を読めるようにする（ブラウザでは高さ0） */
+.screen-title::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  height: env(safe-area-inset-top);
+  background: var(--navy);
+}
+
 .title-backdrop {
   position: absolute;
   inset: 0;
@@ -2783,6 +2795,56 @@ dialog.sheet[open] {
 
 .opt-row .btn {
   flex: none;
+}
+
+.home-card-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.home-card-icon {
+  flex: none;
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(11, 42, 102, 0.25);
+}
+
+.home-card-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.home-steps {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg-soft);
+  font-size: 13.5px;
+}
+
+.home-steps-title {
+  margin: 0;
+  font-weight: 900;
+  color: var(--navy);
+}
+
+.home-steps ol {
+  margin: 4px 0 10px;
+  padding-left: 1.4em;
+  line-height: 1.7;
+}
+
+.home-steps ol:last-child {
+  margin-bottom: 0;
+}
+
+.home-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
 }
 
 .about-list {

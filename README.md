@@ -11,6 +11,7 @@ NPBドラフト指名選手で17人を編成するルーレットゲーム（自
 | Phase 1.5 | 仕上げ（リール演出・効果音・シェア画像・保存一覧） | 完了 |
 | Beta v1.1 | タイトル画面・メニュー・各画面のアプリ化 | 完了 |
 | Beta v1.2 | ドラフト会議の演出・白を基調にしたデザイン | 完了 |
+| Beta v1.3 | ホーム画面のアプリアイコン・全画面での起動 | 完了 |
 
 ## 画面の構成
 
@@ -62,6 +63,19 @@ npm test
 
 リポジトリの Settings → Pages で、Source を「Deploy from a branch」、Branch を `main` の `/ (root)` にする。公開 URL は https://miyoshigo-cpu.github.io/baseball-draftdraft/ になる。パスはすべて相対パスなので、そのまま動く。
 
+### ホーム画面に追加する（アプリとして使う）
+
+- iPhone：Safari で公開 URL を開き、共有ボタン →「ホーム画面に追加」。Android：Chrome のメニュー →「ホーム画面に追加」または「アプリをインストール」。
+- アイコンから開くと、ブラウザのバーがない全画面で起動する。ホーム画面での名前は「ドラルー」（`manifest.webmanifest` の `short_name` と、`index.html` の `apple-mobile-web-app-title`）。
+- ホーム画面から開いたアプリは、ブラウザとは別にデータを保存する（iPhone の仕様）。ブラウザで進めたゲームや保存したチームは引き継がれない。
+- オフラインでは動かない（毎回、公開ページから読み込む）。そのぶん、更新はアプリを開き直すだけで反映される。
+
+アイコンを作り直すときは、`scripts/build_icons.mjs` の SVG を直してから次を実行する（Playwright を使う）。
+
+```bash
+npm run icons
+```
+
 ### ファイル構成
 
 | パス | 内容 |
@@ -80,7 +94,8 @@ npm test
 | `js/sound.js` | 効果音（Web Audio API。音声ファイルなし） |
 | `js/teams.js` | 当時の球団略称（`'85 南海` など） |
 | `js/version.js` | バージョンと更新ログ（アプリ内の表示と `CHANGELOG.md` の元） |
-| `tests/*.test.mjs` | テスト（ルール・バージョンと更新ログ・画面遷移） |
+| `manifest.webmanifest` / `icons/` | ホーム画面に追加したときの設定とアプリアイコン（`scripts/build_icons.mjs` で生成） |
+| `tests/*.test.mjs` | テスト（ルール・バージョンと更新ログ・画面遷移・ホーム画面用の設定） |
 
 ## バージョンと更新ログ
 
