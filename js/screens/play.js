@@ -6,6 +6,7 @@ import { shortYear } from "../teams.js";
 import { sfx, unlockAudio } from "../sound.js";
 import { $, esc, isNarrow, reduceMotion, scrollToEl, toast } from "../dom.js";
 import { go, goUp } from "../router.js";
+import { openPlayerByPickId } from "./player.js";
 import {
   app,
   draftShort,
@@ -240,7 +241,7 @@ function renderDirectory() {
       p.signed ? "" : `<span class="badge badge-unsigned">入団せず</span>`,
     ].join("");
     return `
-      <li>
+      <li class="pick-row">
         <button type="button" class="pick${selected ? " is-selected" : ""}${reason ? " is-disabled" : ""}"
           data-pick="${esc(p.id)}" aria-pressed="${selected}" ${reason ? 'aria-disabled="true"' : ""}>
           <span class="pick-round">${esc(p.roundLabel)}</span>
@@ -248,9 +249,13 @@ function renderDirectory() {
             <span class="pick-name">${esc(p.name)}</span>
             <span class="pick-sub"><span class="pos pos-${p.group}">${esc(p.pos)}</span>${esc(p.from)}</span>
             ${p.note && !p.signed ? `<span class="pick-note">${esc(p.note)}</span>` : ""}
+            ${badges ? `<span class="pick-badges">${badges}</span>` : ""}
             ${reason ? `<span class="pick-reason">${esc(reason)}</span>` : ""}
           </span>
-          <span class="pick-badges">${badges}</span>
+        </button>
+        <button type="button" class="pick-info" data-info="${esc(p.id)}" aria-label="${esc(p.name)}の詳細">
+          <svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1.3" fill="currentColor"/></svg>
+          <span>詳細</span>
         </button>
       </li>`;
   });
@@ -711,8 +716,16 @@ export function initPlay() {
 
   $("btn-spin").addEventListener("click", onSpin);
   $("pick-list").addEventListener("click", (e) => {
+    const info = e.target.closest("button[data-info]");
+    if (info) {
+      openPlayerByPickId(info.dataset.info);
+      return;
+    }
     const btn = e.target.closest("button[data-pick]");
     if (btn) onSelectPick(btn.dataset.pick);
+  });
+  $("pd-info").addEventListener("click", () => {
+    if (ui.place) openPlayerByPickId(ui.place.pickId);
   });
   $("action-bar").addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-act]");

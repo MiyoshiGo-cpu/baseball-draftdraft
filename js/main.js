@@ -6,6 +6,7 @@ import { goBack, registerScreen, startRouter } from "./router.js";
 import { app, loadData, setSound, soundOn } from "./app.js";
 import { setSoundEnabled, sfx, unlockAudio } from "./sound.js";
 import { gameScreen, initPlay, setupScreen } from "./screens/play.js";
+import { initPlayer } from "./screens/player.js";
 import {
   changelogScreen,
   creditsScreen,
@@ -131,6 +132,7 @@ function init() {
   for (const [name, def] of Object.entries(SCREENS)) registerScreen(name, def);
   initPlay();
   initPages();
+  initPlayer();
 
   $("bar-back").addEventListener("click", () => {
     unlockAudio();

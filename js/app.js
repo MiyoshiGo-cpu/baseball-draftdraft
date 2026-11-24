@@ -14,6 +14,8 @@ export const app = {
   data: null,
   /** 進行中（または終わった直後）のゲーム。まだ一度も始めていなければ null */
   state: null,
+  /** 選手データ（data/players.json）。選手の詳細を開いたときに読み込む */
+  players: null,
   seedParam: parseSeedParam(location.search),
 };
 
@@ -40,6 +42,24 @@ export function loadData() {
     });
   }
   return dataPromise;
+}
+
+let playersPromise = null;
+
+/** 選手データ（成績・プロフィール）を読み込む。大きいので、必要になったときに1回だけ読む。 */
+export function loadPlayers() {
+  if (!playersPromise) {
+    playersPromise = (async () => {
+      const res = await fetch("data/players.json", { cache: "no-cache" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      app.players = await res.json();
+      return app.players;
+    })();
+    playersPromise.catch(() => {
+      playersPromise = null;
+    });
+  }
+  return playersPromise;
 }
 
 // ---------------------------------------------------------------------------
@@ -127,8 +147,9 @@ export function groupLabel(pick) {
 export function teamHTML(snapshot, { highlight = null } = {}) {
   const meta = (p) => esc(pickMeta(p, slotShort(p.franchiseId)));
   const cls = (p) => (p ? `slot is-filled${highlight && p.pickId === highlight ? " is-new" : ""}` : "slot is-empty");
+  const attrs = (p) => (p ? ` data-player="${esc(p.pickId)}" role="button" tabindex="0" aria-label="${esc(p.name)}の詳細"` : "");
   const row = (label, p, extra = "") => `
-    <li class="${cls(p)}">
+    <li class="${cls(p)}"${attrs(p)}>
       <span class="slot-label">${label}</span>${extra}
       ${
         p

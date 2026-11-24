@@ -5,7 +5,7 @@
 
 /** "beta"（ベータ版）または "release"（正式版） */
 export const STAGE = "beta";
-export const VERSION = "1.4";
+export const VERSION = "1.5";
 
 export const STAGE_ORDER = ["beta", "release"];
 
@@ -37,6 +37,19 @@ export const CHANGE_TYPES = {
  *   changes: [{ type: "new" | "improve" | "change" | "fix" | "data", text }] }
  */
 export const CHANGELOG = [
+  {
+    stage: "beta",
+    version: "1.5",
+    date: "2026-11-24",
+    title: "選手の詳細",
+    changes: [
+      { type: "new", text: "選手の詳細シート：指名選手リストの「詳細」、配置画面の「選手の詳細」、マイチームの選手をタップすると開く" },
+      { type: "new", text: "詳細シートの中身：プロフィール（投打・守備位置・生年月日・出身地・身長体重・経歴）、守れるポジション（一軍の守備位置別の試合数）、通算と年度別の成績（NPB 一軍）、タイトル・表彰、Wikipedia へのリンク" },
+      { type: "data", text: "指名選手 5,029 人ぶんの選手データを収録（各選手の Wikipedia 記事から作成。NPB 一軍の成績がある選手は 3,730 人）" },
+      { type: "improve", text: "リーグ1位の成績を赤の太字で表示" },
+      { type: "improve", text: "指名選手リストの「育成」「入団せず」などのバッジを、名前の下に表示" },
+    ],
+  },
   {
     stage: "beta",
     version: "1.4",

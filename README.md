@@ -13,6 +13,8 @@ NPBドラフト指名選手で17人を編成するルーレットゲーム（自
 | Beta v1.2 | ドラフト会議の演出・白を基調にしたデザイン | 完了 |
 | Beta v1.3 | ホーム画面のアプリアイコン・全画面での起動 | 完了 |
 | Beta v1.4 | 投手と野手の区別をなくす | 完了 |
+| Beta v1.5 | 選手データ（成績・守備位置・プロフィール）と選手の詳細 | 完了 |
+| Beta v1.6 | 完成画面のキャリアハイ表示・チームの総合力 | 予定 |
 
 ## 画面の構成
 
@@ -95,9 +97,11 @@ npm run icons
 | `js/share.js` | テキストコピーとシェア画像（Canvas → PNG） |
 | `js/sound.js` | 効果音（Web Audio API。音声ファイルなし） |
 | `js/teams.js` | 当時の球団略称（`'85 南海` など） |
+| `js/stats.js` | 成績の計算と表示（通算の打率・防御率、投球回の換算など） |
+| `js/screens/player.js` | 選手の詳細シート |
 | `js/version.js` | バージョンと更新ログ（アプリ内の表示と `CHANGELOG.md` の元） |
 | `manifest.webmanifest` / `icons/` | ホーム画面に追加したときの設定とアプリアイコン（`scripts/build_icons.mjs` で生成） |
-| `tests/*.test.mjs` | テスト（ルール・バージョンと更新ログ・画面遷移・ホーム画面用の設定） |
+| `tests/*.test.mjs` | テスト（ルール・バージョンと更新ログ・画面遷移・ホーム画面用の設定・成績の計算・選手データ） |
 
 ## バージョンと更新ログ
 
@@ -117,6 +121,14 @@ npm run icons
 
 3. `npm test` を実行する。`CHANGELOG.md` と `js/version.js` が食い違っているとテストが失敗する。
 4. プルリクエストを作って main にマージすると、GitHub Pages に自動で反映される（Claude に作業を頼んだ場合は、確認のあと Claude がここまで行う）。
+
+## 選手データ（`data/players.json`）
+
+- 指名選手の Wikipedia 記事から、プロフィール（投打・守備位置・生年月日・出身地・身長体重・経歴）、NPB 一軍の年度別成績（打撃・投手）、守備位置別の試合数、タイトル・表彰を取り出したもの。
+- ゲーム中に、指名選手リストの「詳細」や、マイチームの選手をタップすると見られる（選手の詳細シート）。
+- 検証結果（件数、抜き取り確認、NPB として扱わなかった球団表記）は [scripts/players_report.md](scripts/players_report.md)。
+- 作り直し：`python3 scripts/build_players.py`（記事を 50 件ずつまとめて取得し、成績の表は Wikipedia 側で 20 人ずつ HTML に変換して読む。初回は 30〜60 分かかる。`--offline` でキャッシュだけから作り直せる）。
+- 出典：Wikipedia日本語版の各選手の記事（CC BY-SA 4.0）。
 
 ## データ（`data/drafts.json`）
 
