@@ -147,17 +147,16 @@ describe("設定", () => {
       passLimit: 3,
       includeIkusei: true,
       includeUnsigned: true,
-      pitcherFielderRule: "strict",
       sound: true,
     });
   });
 
   test("範囲外の値は丸め、開始と終了が逆なら入れ替える", () => {
-    const s = normalizeSettings({ yearFrom: 2030, yearTo: 1900, passLimit: 99, pitcherFielderRule: "?" });
+    const s = normalizeSettings({ yearFrom: 2030, yearTo: 1900, passLimit: 99, pitcherFielderRule: "strict" });
     assert.equal(s.yearFrom, 1965);
     assert.equal(s.yearTo, 2025);
     assert.equal(s.passLimit, 10);
-    assert.equal(s.pitcherFielderRule, "strict");
+    assert.ok(!("pitcherFielderRule" in s), "投手⇔野手の制限は Beta v1.4 でなくした");
   });
 
   test("1回目のスピンの後は、効果音以外の設定を変えられない", () => {
@@ -268,29 +267,23 @@ function autoSkipOrPlace(st, data) {
 // ---------------------------------------------------------------------------
 
 describe("配置のルール", () => {
-  test("厳格：投手は投手枠だけ、野手はスタメン・控えだけ", () => {
+  test("投手と野手の区別はなく、どの選手もどの枠にでも入れられる", () => {
     const data = makeData();
     const st = at(createGame(S(), 1), 2000, "giants");
     const pitcher = pickByName(data, "2000-giants投A");
     const fielder = pickByName(data, "2000-giants野A");
-    assert.deepEqual(openSlots(st, pitcher).map((s) => s.kind), ["SP", "RP", "CL"]);
-    assert.deepEqual(openSlots(st, fielder).map((s) => s.kind), ["lineup", "bench"]);
-    assert.throws(() => place(st, data, pitcher.id, lineupSlot(1, "捕")), GameError);
-    assert.throws(() => place(st, data, fielder.id, "SP"), GameError);
+    const all = ["lineup", "bench", "SP", "RP", "CL"];
+    assert.deepEqual(openSlots(st, pitcher).map((s) => s.kind), all);
+    assert.deepEqual(openSlots(st, fielder).map((s) => s.kind), all);
+    // 投手登録の選手を野手で（糸井嘉男・雄平のような転向組）
+    const a = place(st, data, pitcher.id, lineupSlot(3, "右"));
+    assert.deepEqual(a.roster.lineup, [{ order: 3, pos: "右", pickId: pitcher.id }]);
+    // 野手登録の選手を投手で
+    const b = place(st, data, fielder.id, "CL");
+    assert.deepEqual(b.roster.CL, [fielder.id]);
   });
 
-  test("ゆるめ：投手もスタメン・控えに入れられるが、野手は投手枠に入れられない", () => {
-    const data = makeData();
-    const st = at(createGame(S({ pitcherFielderRule: "loose" }), 1), 2000, "giants");
-    const pitcher = pickByName(data, "2000-giants投A");
-    const fielder = pickByName(data, "2000-giants野A");
-    assert.deepEqual(openSlots(st, pitcher).map((s) => s.kind), ["lineup", "bench", "SP", "RP", "CL"]);
-    assert.deepEqual(openSlots(st, fielder).map((s) => s.kind), ["lineup", "bench"]);
-    const next = place(st, data, pitcher.id, lineupSlot(9, "DH"));
-    assert.deepEqual(next.roster.lineup, [{ order: 9, pos: "DH", pickId: pitcher.id }]);
-  });
-
-  test("二刀流は設定にかかわらずどちらにも入れられる（1枠だけ）", () => {
+  test("二刀流の選手も、ほかの選手と同じく1枠だけ", () => {
     const data = makeData({
       extra: { [pairKey(2000, "fighters")]: draft(2000, "fighters", [{ name: "二刀流", twoWay: true }]) },
     });
@@ -339,14 +332,16 @@ describe("配置のルール", () => {
     assert.equal(hasPickable(st, data), true); // 別人は取れる
   });
 
-  test("枠が満杯なら理由つきで選べない", () => {
+  test("投手の枠が埋まっていても、投手をスタメン・控えに入れられる", () => {
     const data = makeData();
     let st = at(createGame(S(), 1), 2000, "giants");
     st = { ...st, roster: { ...st.roster, SP: ["a", "b", "c"], RP: ["d", "e"], CL: ["f"] } };
-    // 存在しない pickId でも満杯判定は枠の数だけで決まる
+    // 存在しない pickId でも、空きの判定は枠の数だけで決まる
     const fakeData = { ...data, picks: new Map([...data.picks, ...["a", "b", "c", "d", "e", "f"].map((k) => [k, { playerKey: k }])]) };
-    assert.equal(pickableReason(st, pickByName(data, "2000-giants投A"), fakeData), "投手枠が満杯");
-    assert.equal(pickableReason(st, pickByName(data, "2000-giants野A"), fakeData), null);
+    const pitcher = pickByName(data, "2000-giants投A");
+    assert.equal(pickableReason(st, pitcher, fakeData), null);
+    assert.deepEqual(openSlots(st, pitcher).map((s) => s.kind), ["lineup", "bench"]);
+    assert.throws(() => place(st, fakeData, pitcher.id, "SP"), GameError);
   });
 
   test("今のスピンの一覧にいない選手は配置できない", () => {
@@ -395,13 +390,17 @@ describe("パスと自動スキップ", () => {
     assert.throws(() => autoSkip(st, data), GameError);
   });
 
-  test("配置できる選手がいなければ、パスを消費せずに自動スキップできる", () => {
+  test("配置できる選手がいなければ（全員がすでにチームにいる）、パスを消費せずに自動スキップできる", () => {
     const data = makeData({
-      extra: { [pairKey(2000, "giants")]: draft(2000, "giants", [{ name: "投手だけ" }]) },
+      extra: {
+        [pairKey(2000, "giants")]: draft(2000, "giants", [{ name: "江川", playerKey: "江川" }]),
+        [pairKey(2001, "tigers")]: draft(2001, "tigers", [{ name: "江川", playerKey: "江川" }]),
+      },
     });
     let st = at(createGame(S({ passLimit: 0 }), 1), 2000, "giants");
-    st = { ...st, roster: { ...st.roster, SP: ["x1", "x2", "x3"], RP: ["x4", "x5"], CL: ["x6"] } };
-    const d2 = { ...data, picks: new Map([...data.picks, ...[1, 2, 3, 4, 5, 6].map((i) => [`x${i}`, { playerKey: `x${i}` }])]) };
+    st = place(st, data, "2000-giants-01", "SP");
+    st = at(st, 2001, "tigers");
+    const d2 = data;
     assert.equal(hasPickable(st, d2), false);
     const next = autoSkip(st, d2);
     assert.equal(next.passesUsed, 0);
@@ -506,7 +505,6 @@ describe("実データ（data/drafts.json）", () => {
   });
 
   test("ランダムに300ゲーム遊んでもルールが守られる", () => {
-    const rules = ["strict", "loose"];
     for (let g = 0; g < 300; g++) {
       const rnd = createRng(`agent-${g}`);
       const yearFrom = 1965 + Math.floor(rnd() * 55);
@@ -516,7 +514,6 @@ describe("実データ（data/drafts.json）", () => {
         passLimit: Math.floor(rnd() * 4),
         includeIkusei: rnd() < 0.5,
         includeUnsigned: rnd() < 0.5,
-        pitcherFielderRule: rules[g % 2],
       };
       let st = createGame(settings, g);
       if (!canStart(st.settings, data).ok) continue;
@@ -551,15 +548,8 @@ describe("実データ（data/drafts.json）", () => {
       assert.equal(new Set(st.roster.lineup.map((e) => e.order)).size, st.roster.lineup.length);
       assert.equal(new Set(st.roster.lineup.map((e) => e.pos)).size, st.roster.lineup.length);
       assert.ok(st.passesUsed <= st.settings.passLimit);
-      for (const id of [...st.roster.SP, ...st.roster.RP, ...st.roster.CL]) {
-        const p = data.picks.get(id);
-        assert.ok(p.group === "P" || p.twoWay, `${p.name} は野手なのに投手枠にいる`);
-      }
-      if (st.settings.pitcherFielderRule === "strict") {
-        for (const id of [...st.roster.lineup.map((e) => e.pickId), ...st.roster.bench]) {
-          const p = data.picks.get(id);
-          assert.ok(p.group === "F" || p.twoWay, `${p.name} は投手なのに野手枠にいる`);
-        }
+      for (const [kind, size] of Object.entries({ lineup: 9, bench: 2, SP: 3, RP: 2, CL: 1 })) {
+        assert.ok(st.roster[kind].length <= size, `${kind} が定員を超えている`);
       }
       for (const id of ids) {
         const p = data.picks.get(id);

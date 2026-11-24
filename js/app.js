@@ -109,7 +109,6 @@ export function settingsBrief(s) {
     `パス${s.passLimit}`,
     `育成${s.includeIkusei ? "あり" : "なし"}`,
     `入団拒否${s.includeUnsigned ? "あり" : "なし"}`,
-    s.pitcherFielderRule === "strict" ? "厳格" : "ゆるめ",
   ].join("・");
 }
 
