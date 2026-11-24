@@ -65,12 +65,15 @@ export async function copyText(text) {
 const IMG = {
   width: 1080,
   pad: 64,
-  bg: "#123829",
-  panel: "#18473a",
-  text: "#f6f1e3",
-  dim: "#a8c3b6",
-  accent: "#f0b84a",
-  line: "rgba(246, 241, 227, 0.14)",
+  bg: "#ffffff",
+  ink: "#0f1b2d",
+  muted: "#667085",
+  navy: "#0b2a66",
+  navy2: "#163f99",
+  red: "#e3002b",
+  gold: "#f5b400",
+  line: "#e3e7ee",
+  soft: "#f3f5f9",
   font: '"Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", Meiryo, sans-serif',
 };
 
@@ -91,15 +94,25 @@ function fitText(ctx, text, x, y, maxWidth, size, weight = 400, align = "left") 
   ctx.textAlign = "left";
 }
 
-/** チームをシェア画像として canvas に描く。描いた canvas を返す。 */
-export function drawShareImage(snapshot, shortOf = () => "", { title = "ドラフトルーレット", dateText = "" } = {}) {
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+/** チームをシェア画像として canvas に描く（白地に紺と赤）。描いた canvas を返す。 */
+export function drawShareImage(snapshot, shortOf = () => "", { dateText = "", footer = "ドラフトルーレット" } = {}) {
   const { width: W, pad } = IMG;
-  const rowH = 64;
-  const smallRowH = 58;
-  const headH = 58;
-  const top = 200;
+  const headerH = 210;
+  const rowH = 66;
+  const smallRowH = 60;
+  const headH = 64;
   const lowerRows = snapshot.bench.length + snapshot.SP.length + snapshot.RP.length + snapshot.CL.length;
-  const H = top + headH + rowH * 9 + 28 + headH * 2 + smallRowH * lowerRows + 110;
+  const H = headerH + 24 + headH + rowH * 9 + 20 + headH * 2 + smallRowH * lowerRows + 120;
 
   const canvas = document.createElement("canvas");
   canvas.width = W;
@@ -109,41 +122,81 @@ export function drawShareImage(snapshot, shortOf = () => "", { title = "ドラ�
 
   ctx.fillStyle = IMG.bg;
   ctx.fillRect(0, 0, W, H);
-  // 外枠
-  ctx.strokeStyle = IMG.accent;
-  ctx.lineWidth = 6;
-  ctx.strokeRect(20, 20, W - 40, H - 40);
 
-  ctx.fillStyle = IMG.accent;
-  setFont(ctx, 30, 700);
-  ctx.fillText("DRAFT ROULETTE", pad, 84);
-  ctx.fillStyle = IMG.text;
-  setFont(ctx, 60, 800);
-  ctx.fillText(title, pad, 136);
-  ctx.fillStyle = IMG.dim;
-  setFont(ctx, 28, 500);
-  const stats = `スピン${snapshot.spins}回・パス${snapshot.passes}回${snapshot.complete ? "" : "（未完成）"}`;
-  ctx.textAlign = "right";
-  ctx.fillText(stats, W - pad, 84);
-  if (dateText) ctx.fillText(dateText, W - pad, 136);
-  ctx.textAlign = "left";
+  // 見出しの帯（ドラフト会議の中継画面風）
+  const grad = ctx.createLinearGradient(0, 0, W, 0);
+  grad.addColorStop(0, IMG.navy2);
+  grad.addColorStop(1, IMG.navy);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, headerH);
+  ctx.fillStyle = IMG.red;
+  ctx.fillRect(0, headerH, W, 10);
+  // 斜めの線の模様
+  ctx.save();
+  ctx.globalAlpha = 0.06;
+  ctx.strokeStyle = "#fff";
+  ctx.lineWidth = 3;
+  for (let x = -headerH; x < W; x += 26) {
+    ctx.beginPath();
+    ctx.moveTo(x, headerH);
+    ctx.lineTo(x + headerH * 0.47, 0);
+    ctx.stroke();
+  }
+  ctx.restore();
 
-  let y = top;
+  ctx.fillStyle = IMG.gold;
+  setFont(ctx, 28, 900);
+  ctx.fillText("DRAFT ROULETTE", pad, 62);
+  ctx.fillStyle = "#fff";
+  setFont(ctx, 64, 900);
+  ctx.fillText(snapshot.complete ? "指名選手一覧" : "指名選手一覧（未完成）", pad, 128);
+  ctx.fillStyle = "rgba(255,255,255,0.8)";
+  setFont(ctx, 28, 700);
+  ctx.fillText(`スピン${snapshot.spins}回・パス${snapshot.passes}回`, pad, 180);
+  if (dateText) {
+    ctx.textAlign = "right";
+    ctx.fillText(dateText, W - pad, 180);
+    ctx.textAlign = "left";
+  }
+  if (snapshot.complete) {
+    // 「選択終了」のはんこ
+    ctx.save();
+    ctx.translate(W - pad - 120, 96);
+    ctx.rotate(-0.2);
+    ctx.strokeStyle = IMG.red;
+    ctx.fillStyle = "#fff";
+    ctx.lineWidth = 6;
+    roundRect(ctx, -118, -42, 236, 84, 12);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = IMG.red;
+    setFont(ctx, 46, 900);
+    ctx.textAlign = "center";
+    ctx.fillText("選択終了", 0, 2);
+    ctx.restore();
+  }
+
+  let y = headerH + 24;
   const sectionHead = (label) => {
-    ctx.fillStyle = IMG.accent;
-    setFont(ctx, 28, 700);
-    ctx.fillText(label, pad, y + headH / 2);
-    ctx.strokeStyle = IMG.accent;
+    const cy = y + headH / 2;
+    ctx.fillStyle = IMG.navy;
+    ctx.fillRect(pad, cy - 18, 8, 24);
+    ctx.fillStyle = IMG.red;
+    ctx.fillRect(pad, cy + 6, 8, 12);
+    ctx.fillStyle = IMG.navy;
+    setFont(ctx, 30, 900);
+    ctx.fillText(label, pad + 22, cy);
+    ctx.strokeStyle = IMG.line;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(pad + ctx.measureText(label).width + 20, y + headH / 2);
-    ctx.lineTo(W - pad, y + headH / 2);
+    ctx.moveTo(pad + 22 + ctx.measureText(label).width + 18, cy);
+    ctx.lineTo(W - pad, cy);
     ctx.stroke();
     y += headH;
   };
   const rowLine = (h) => {
     ctx.strokeStyle = IMG.line;
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(pad, y + h);
     ctx.lineTo(W - pad, y + h);
@@ -154,44 +207,55 @@ export function drawShareImage(snapshot, shortOf = () => "", { title = "ドラ�
   sectionHead("スタメン");
   for (const row of snapshot.lineup) {
     const cy = y + rowH / 2;
-    ctx.fillStyle = IMG.accent;
-    setFont(ctx, 36, 800);
+    // 打順（紺の丸）
+    ctx.fillStyle = row.player ? IMG.navy : IMG.soft;
+    ctx.beginPath();
+    ctx.arc(pad + 26, cy, 24, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = row.player ? "#fff" : IMG.muted;
+    setFont(ctx, 28, 900);
     ctx.textAlign = "center";
-    ctx.fillText(String(row.order), pad + 22, cy);
-    ctx.fillStyle = IMG.text;
-    setFont(ctx, 32, 700);
-    ctx.fillText(row.field || "", pad + 100, cy);
+    ctx.fillText(String(row.order), pad + 26, cy + 1);
+    // 守備位置（赤の角丸）
+    if (row.field) {
+      ctx.fillStyle = IMG.red;
+      roundRect(ctx, pad + 66, cy - 22, 72, 44, 10);
+      ctx.fill();
+      ctx.fillStyle = "#fff";
+      setFont(ctx, 28, 900);
+      ctx.fillText(row.field, pad + 102, cy + 1);
+    }
     ctx.textAlign = "left";
     if (row.player) {
-      ctx.fillStyle = IMG.text;
-      fitText(ctx, row.player.name, pad + 160, cy, W - pad * 2 - 160 - metaWidth - 16, 40, 700);
-      ctx.fillStyle = IMG.dim;
-      fitText(ctx, pickMeta(row.player, shortOf(row.player.franchiseId)), W - pad, cy, metaWidth, 26, 500, "right");
+      ctx.fillStyle = IMG.ink;
+      fitText(ctx, row.player.name, pad + 162, cy, W - pad * 2 - 162 - metaWidth - 16, 40, 900);
+      ctx.fillStyle = IMG.muted;
+      fitText(ctx, pickMeta(row.player, shortOf(row.player.franchiseId)), W - pad, cy, metaWidth, 26, 700, "right");
     } else {
-      ctx.fillStyle = IMG.dim;
+      ctx.fillStyle = IMG.muted;
       setFont(ctx, 32, 400);
-      ctx.fillText(EMPTY, pad + 160, cy);
+      ctx.fillText(EMPTY, pad + 162, cy);
     }
     rowLine(rowH);
     y += rowH;
   }
-  y += 28;
+  y += 20;
 
   const listRows = (label, players) => {
     for (const p of players) {
       const cy = y + smallRowH / 2;
-      ctx.fillStyle = IMG.accent;
-      setFont(ctx, 24, 700);
+      ctx.fillStyle = IMG.navy;
+      setFont(ctx, 26, 900);
       ctx.fillText(label, pad, cy);
       if (p) {
-        ctx.fillStyle = IMG.text;
-        fitText(ctx, p.name, pad + 130, cy, W - pad * 2 - 130 - metaWidth - 16, 34, 700);
-        ctx.fillStyle = IMG.dim;
-        fitText(ctx, pickMeta(p, shortOf(p.franchiseId)), W - pad, cy, metaWidth, 24, 500, "right");
+        ctx.fillStyle = IMG.ink;
+        fitText(ctx, p.name, pad + 138, cy, W - pad * 2 - 138 - metaWidth - 16, 36, 900);
+        ctx.fillStyle = IMG.muted;
+        fitText(ctx, pickMeta(p, shortOf(p.franchiseId)), W - pad, cy, metaWidth, 24, 700, "right");
       } else {
-        ctx.fillStyle = IMG.dim;
+        ctx.fillStyle = IMG.muted;
         setFont(ctx, 30, 400);
-        ctx.fillText(EMPTY, pad + 130, cy);
+        ctx.fillText(EMPTY, pad + 138, cy);
       }
       rowLine(smallRowH);
       y += smallRowH;
@@ -205,10 +269,16 @@ export function drawShareImage(snapshot, shortOf = () => "", { title = "ドラ�
   listRows(KIND_LABELS.RP, snapshot.RP);
   listRows(KIND_LABELS.CL, snapshot.CL);
 
-  ctx.fillStyle = IMG.dim;
-  setFont(ctx, 20, 400);
-  ctx.textAlign = "center";
-  ctx.fillText("指名データ：Wikipedia日本語版「新人選手選択会議 (日本プロ野球)」（CC BY-SA 4.0）", W / 2, H - 58);
+  // フッター
+  ctx.fillStyle = IMG.navy;
+  ctx.fillRect(0, H - 70, W, 70);
+  ctx.fillStyle = "#fff";
+  setFont(ctx, 22, 800);
+  ctx.fillText(footer, pad, H - 35);
+  ctx.fillStyle = "rgba(255,255,255,0.75)";
+  setFont(ctx, 19, 500);
+  ctx.textAlign = "right";
+  ctx.fillText("指名データ：Wikipedia日本語版（CC BY-SA 4.0）", W - pad, H - 35);
   ctx.textAlign = "left";
   return canvas;
 }

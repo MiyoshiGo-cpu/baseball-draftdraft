@@ -74,7 +74,7 @@ function renderSetup() {
   const warn = $("setup-warning");
   warn.hidden = !hasGameInProgress();
   if (hasGameInProgress()) {
-    warn.textContent = `進行中のゲーム（${progressText(app.state)}）は、プレイボールすると消えます。`;
+    warn.textContent = `進行中のゲーム（${progressText(app.state)}）は、ドラフトを開始すると消えます。`;
   }
 }
 
@@ -159,12 +159,16 @@ function renderResult() {
   const saved = complete && storage.isSaved(teamId(state));
   el.classList.toggle("is-stuck", !complete);
   el.innerHTML = `
-    <p class="result-kicker">${complete ? "TEAM COMPLETE" : "GAME OVER"}</p>
-    <h2 class="result-title">${complete ? "完成！" : "未完成で終了"}</h2>
-    <p class="result-stats">スピン<b>${G.spinCount(state)}</b>回・パス<b>${state.passesUsed}</b>回${
-      complete ? "" : `・${filled}/${G.TOTAL_SLOTS}人`
-    }</p>
-    ${complete ? "" : `<p class="result-note">抽選できる「球団×年度」がなくなりました。</p>`}
+    <div class="result-band">
+      <p class="result-kicker">${complete ? "DRAFT COMPLETE" : "GAME OVER"}</p>
+      <h2 class="result-title">${complete ? "選択終了" : "未完成で終了"}</h2>
+    </div>
+    <p class="result-stats">指名<b>${filled}</b>名・スピン<b>${G.spinCount(state)}</b>回・パス<b>${state.passesUsed}</b>回</p>
+    ${
+      complete
+        ? `<p class="result-note">全${G.TOTAL_SLOTS}名の指名が完了しました。</p>`
+        : `<p class="result-note">抽選できる「球団×年度」がなくなりました（${filled}/${G.TOTAL_SLOTS}名）。</p>`
+    }
     <div class="result-actions">
       <button type="button" class="btn" data-act="copy">テキストでコピー</button>
       <button type="button" class="btn" data-act="image">画像を保存</button>
@@ -173,7 +177,7 @@ function renderResult() {
           ? `<button type="button" class="btn" data-act="save" ${saved ? "disabled" : ""}>${saved ? "保存済み" : "この編成を保存"}</button>`
           : ""
       }
-      <button type="button" class="btn btn-primary" data-act="again">もう一度遊ぶ</button>
+      <button type="button" class="btn btn-cta" data-act="again">もう一度遊ぶ</button>
       <button type="button" class="btn" data-act="menu">メニューへ</button>
     </div>`;
 }
@@ -187,6 +191,7 @@ function renderRoulette() {
   btn.disabled = ui.spinning || Boolean(state.current);
   btn.textContent = ui.spinning ? "回転中…" : "ルーレットを回す";
 
+  $("draw-no").textContent = `第${G.spinCount(state) + (state.current || ui.spinning ? 0 : 1)}回`;
   $("count-spins").textContent = String(G.spinCount(state));
   $("count-passes").textContent = String(G.passesLeft(state));
   $("count-team").textContent = String(G.filledCount(state.roster));
@@ -194,7 +199,7 @@ function renderRoulette() {
   let hint = "";
   if (ui.spinning) hint = "";
   else if (state.status === "setup") hint = "ルーレットを回して、最初の「球団×年度」を決めましょう。";
-  else if (state.current) hint = "名鑑から1人選んでチームに追加するか、パスしてください。";
+  else if (state.current) hint = "指名選手の中から1人を選んで指名するか、パスしてください。";
   else hint = "ルーレットを回してください。";
   $("spin-hint").textContent = hint;
 
@@ -227,7 +232,7 @@ function renderDirectory() {
   if (!d || ui.spinning) return;
 
   const picks = G.currentPicks(state, data);
-  $("directory-title").innerHTML = `${d.year}年 ${esc(d.teamName)}<span class="directory-count">（指名${picks.length}人）</span>`;
+  $("directory-title").innerHTML = `<span class="dir-year">${d.year}年</span><span class="dir-team">${esc(d.teamName)}</span><span class="directory-count">指名${picks.length}人</span>`;
   if (ui.selected && !picks.some((p) => p.id === ui.selected && !G.pickableReason(state, p, data))) ui.selected = null;
 
   let anyPickable = false;
@@ -269,7 +274,7 @@ function renderDirectory() {
       <p class="action-note">${sel ? `選択中：<b>${esc(sel.name)}</b>（${esc(sel.pos)}）` : "選手をタップして選んでください"}</p>
       <div class="action-buttons">
         <button type="button" class="btn" data-act="pass" ${left === 0 ? "disabled" : ""}>パス（残り${left}）</button>
-        <button type="button" class="btn btn-primary" data-act="add" ${sel ? "" : "disabled"}>チームに追加</button>
+        <button type="button" class="btn btn-primary" data-act="add" ${sel ? "" : "disabled"}>この選手を指名</button>
       </div>`;
   }
 }
@@ -290,6 +295,7 @@ function renderHistory() {
     list.innerHTML = `<li class="history-empty">まだスピンしていません。</li>`;
     return;
   }
+  const rounds = G.pickRounds(state);
   list.innerHTML = [...state.history]
     .reverse()
     .map((h) => {
@@ -298,7 +304,7 @@ function renderHistory() {
       let cls = "";
       if (h.action === "pick") {
         const p = data.picks.get(h.pickId);
-        result = `<b>${esc(p?.name)}</b> → ${esc(slotLabel(h.slot))}`;
+        result = `<span class="history-round">第${rounds.get(h.pickId)}巡</span><b>${esc(p?.name)}</b> → ${esc(slotLabel(h.slot))}`;
       } else if (h.action === "pass") {
         result = "パス";
         cls = " is-pass";
@@ -438,11 +444,11 @@ function onSelectPick(pickId) {
   renderDirectory();
 }
 
-function afterResolve(message) {
+function afterResolve(message, { announced = false } = {}) {
   persistGame();
   renderGame();
   if (app.state.status === "complete") {
-    sfx.complete();
+    if (!announced) sfx.complete();
     scrollToEl("result");
     return;
   }
@@ -451,8 +457,50 @@ function afterResolve(message) {
     scrollToEl("result");
     return;
   }
-  toast(message);
+  if (message) toast(message);
   if (isNarrow()) scrollToEl("roulette");
+}
+
+// ---- 指名の発表（ドラフト会議の読み上げ風） ----
+
+let closeAnnounce = null;
+
+/** 発表カードを出す。タップするか少し待つと閉じ、閉じたら解決する。 */
+function announce({ round, team = "", name, meta = "", slot = "", stamp = "", end = false }) {
+  return new Promise((resolve) => {
+    const el = $("announce");
+    $("an-round").textContent = round;
+    $("an-team").textContent = team;
+    $("an-name").textContent = name;
+    $("an-meta").textContent = meta;
+    $("an-slot").textContent = slot;
+    $("an-stamp").textContent = stamp;
+    el.classList.toggle("is-end", end);
+    el.hidden = false; // 表示し直すと CSS のアニメーションも最初から動く
+    if (end) sfx.complete();
+    else sfx.announce();
+    const stampTimer = stamp ? setTimeout(() => sfx.stamp(), 550) : 0;
+    const timer = setTimeout(() => close(), reduceMotion() ? 1400 : end ? 3200 : 2800);
+    const onKey = (e) => {
+      if (["Escape", "Enter", " "].includes(e.key)) {
+        e.preventDefault();
+        close();
+      }
+    };
+    function close() {
+      if (closeAnnounce !== close) return;
+      closeAnnounce = null;
+      clearTimeout(timer);
+      clearTimeout(stampTimer);
+      el.hidden = true;
+      el.removeEventListener("click", close);
+      document.removeEventListener("keydown", onKey);
+      resolve();
+    }
+    closeAnnounce = close;
+    el.addEventListener("click", close);
+    document.addEventListener("keydown", onKey);
+  });
 }
 
 function onPass() {
@@ -570,7 +618,7 @@ function onPlaceDialogClick(event) {
   renderPlaceDialog();
 }
 
-function onConfirmPlace() {
+async function onConfirmPlace() {
   const p = ui.place;
   if (!p) return;
   const slot = p.kind === "lineup" ? G.lineupSlot(p.order, p.pos) : p.kind;
@@ -581,13 +629,33 @@ function onConfirmPlace() {
     toast(e.message);
     return;
   }
-  const name = app.data.picks.get(p.pickId).name;
+  const pick = app.data.picks.get(p.pickId);
+  const d = app.data.pickDraft.get(p.pickId);
   ui.justPlaced = p.pickId;
   ui.selected = null;
   ui.place = null;
   $("place-dialog").close();
-  if (app.state.status !== "complete") sfx.place();
-  afterResolve(`${name}を${slotLabel(slot)}に入れました`);
+  persistGame();
+  renderGame();
+
+  await announce({
+    round: `第${G.filledCount(app.state.roster)}巡選択希望選手`,
+    team: `${d.year}年 ${d.teamName} ${pick.roundLabel}`,
+    name: pick.name,
+    meta: `${pick.pos} ・ ${pick.from}`,
+    slot: slotLabel(slot),
+    stamp: "交渉権確定",
+  });
+  if (app.state.status === "complete") {
+    await announce({
+      end: true,
+      round: "ドラフト会議",
+      team: `全${G.TOTAL_SLOTS}名の指名が完了しました`,
+      name: "選択終了",
+      meta: `スピン${G.spinCount(app.state)}回・パス${app.state.passesUsed}回`,
+    });
+  }
+  afterResolve(null, { announced: true });
 }
 
 // ---- 完成画面 ----
@@ -633,6 +701,7 @@ export const gameScreen = {
   leave() {
     const dlg = $("place-dialog");
     if (dlg.open) dlg.close();
+    if (closeAnnounce) closeAnnounce();
   },
 };
 

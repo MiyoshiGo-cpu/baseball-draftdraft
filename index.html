@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#06101c">
+  <meta name="theme-color" content="#0b2a66">
   <meta name="description" content="ルーレットで決まった「球団×年度」のドラフト指名選手から1人ずつ選び、17人の最強チームを作るゲーム。">
   <title>ドラフトルーレット</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='29' fill='%23fffdf7' stroke='%23123829' stroke-width='4'/%3E%3Cpath d='M18 12c6 6 6 34 0 40M46 12c-6 6-6 34 0 40' fill='none' stroke='%23c23b22' stroke-width='3.5' stroke-dasharray='4 3'/%3E%3C/svg%3E">
@@ -38,60 +38,36 @@
   <main id="screens">
     <!-- ================= タイトル画面 ================= -->
     <section class="screen screen-title" id="screen-title" hidden aria-label="タイトル">
-      <div class="title-lights" aria-hidden="true">
-        <span class="title-tower title-tower-l"></span>
-        <span class="title-tower title-tower-r"></span>
+      <div class="title-backdrop" aria-hidden="true">
+        <span class="title-band title-band-navy"></span>
+        <span class="title-band title-band-red"></span>
+        <span class="title-band title-band-navy-b"></span>
+        <span class="title-watermark">DRAFT</span>
       </div>
-      <svg class="title-field" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-        <defs>
-          <radialGradient id="tf-grass" cx="50%" cy="100%" r="75%">
-            <stop offset="0" stop-color="#2f8a4f"/>
-            <stop offset="0.55" stop-color="#1d6a3a"/>
-            <stop offset="1" stop-color="#0f3f24"/>
-          </radialGradient>
-          <linearGradient id="tf-dirt" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#a86a35"/>
-            <stop offset="1" stop-color="#c78545"/>
-          </linearGradient>
-          <clipPath id="tf-clip"><path d="M0 150 Q500 40 1000 150 L1000 300 L0 300 Z"/></clipPath>
-        </defs>
-        <path d="M0 150 Q500 40 1000 150 L1000 300 L0 300 Z" fill="url(#tf-grass)"/>
-        <g clip-path="url(#tf-clip)">
-          <g transform="translate(230 18) scale(1.35)">
-            <path d="M200 252 L312 180 Q200 108 88 180 Z" fill="url(#tf-dirt)"/>
-            <path d="M200 224 L283 178 L200 146 L117 178 Z" fill="#23733f"/>
-            <path d="M200 224 L700 -53 M200 224 L-300 -53" stroke="#fff" stroke-width="1.4" opacity=".75"/>
-            <ellipse cx="200" cy="184" rx="11" ry="5" fill="#c78545"/>
-            <rect x="278" y="174" width="8" height="8" fill="#fff" transform="rotate(45 282 178)"/>
-            <rect x="196" y="142" width="8" height="8" fill="#fff" transform="rotate(45 200 146)"/>
-            <rect x="113" y="174" width="8" height="8" fill="#fff" transform="rotate(45 117 178)"/>
-            <path d="M194 214 h12 v5 l-6 4 l-6 -4 z" fill="#fff"/>
-          </g>
-        </g>
-        <path d="M0 150 Q500 40 1000 150" fill="none" stroke="#0b2a18" stroke-width="7"/>
-        <path d="M0 150 Q500 40 1000 150" fill="none" stroke="#f0b84a" stroke-width="1.6" opacity=".7"/>
-      </svg>
 
       <div class="title-inner">
         <div class="title-logo">
-          <svg class="title-ball" viewBox="0 0 64 64" aria-hidden="true">
-            <circle cx="32" cy="32" r="28" fill="#fffdf7"/>
-            <circle cx="32" cy="32" r="28" fill="none" stroke="#d9cfb8" stroke-width="2"/>
-            <path d="M18 12c6 6 6 34 0 40M46 12c-6 6-6 34 0 40" fill="none" stroke="#c23b22" stroke-width="3.5" stroke-dasharray="4 4"/>
-          </svg>
-          <p class="title-kicker">NPB DRAFT × ROULETTE</p>
-          <h1 class="title-name"><span>ドラフト</span><span>ルーレット</span></h1>
-          <p class="title-tagline">運命の指名で、最強の17人を。</p>
+          <p class="title-kicker"><span>あなただけの</span>ドラフト会議</p>
+          <h1 class="title-name"><span class="title-name-1">ドラフト</span><span class="title-name-2">ルーレット</span></h1>
+          <p class="title-en">DRAFT ROULETTE</p>
         </div>
 
-        <div class="title-ticker" aria-hidden="true">
-          <div class="title-ticker-track" id="title-ticker"></div>
+        <div class="monitor" aria-hidden="true">
+          <div class="monitor-head">
+            <span class="monitor-live">LIVE</span>
+            <span class="monitor-label">会場モニター</span>
+            <span class="monitor-sub">歴代の1位指名</span>
+          </div>
+          <div class="monitor-body" id="title-monitor">
+            <p class="monitor-round">ドラフト会議</p>
+            <p class="monitor-name">まもなく開始</p>
+          </div>
         </div>
 
         <div class="title-actions">
           <button type="button" class="title-play" id="btn-play">
             <span class="title-play-main">遊ぶ</span>
-            <span class="title-play-sub">PLAY BALL</span>
+            <span class="title-play-sub">START</span>
           </button>
           <p class="title-continue" id="title-continue" hidden></p>
         </div>
@@ -100,7 +76,7 @@
           <button type="button" class="version-btn" id="btn-version">
             <span class="version-num" id="app-version"></span><span class="version-link">更新ログ</span><span class="version-new" id="version-new" hidden>NEW</span>
           </button>
-          <p class="title-credit">指名データ：Wikipedia日本語版（CC BY-SA 4.0）<br>非公式のファンメイドツールです</p>
+          <p class="title-credit">指名データ：Wikipedia日本語版（CC BY-SA 4.0）<br>非公式のファンメイドツールです。NPB・各球団とは関係ありません。</p>
         </div>
       </div>
     </section>
@@ -114,9 +90,9 @@
     <section class="screen" id="screen-setup" hidden aria-label="ルール設定">
       <div class="screen-inner">
         <div class="page-hero">
-          <p class="page-kicker">GAME SETTINGS</p>
-          <h2 class="page-title">ルールを決めて、プレイボール</h2>
-          <p class="page-lead">初期設定のままでも、すぐに遊べます。</p>
+          <p class="page-kicker">RULES</p>
+          <h2 class="page-title">ドラフト会議のルールを決める</h2>
+          <p class="page-lead">初期設定のままでも、すぐに始められます。</p>
         </div>
         <form class="card settings-form" id="setup-form" autocomplete="off">
           <div class="field">
@@ -154,7 +130,7 @@
         <p class="setup-warning" id="setup-warning" hidden></p>
         <div class="setup-actions">
           <button type="button" class="btn" id="btn-setup-default">初期設定に戻す</button>
-          <button type="button" class="btn btn-primary btn-playball" id="btn-playball">プレイボール！</button>
+          <button type="button" class="btn btn-cta btn-playball" id="btn-playball">ドラフト開始！</button>
         </div>
       </div>
     </section>
@@ -166,7 +142,10 @@
           <section class="card result" id="result" hidden aria-live="polite"></section>
 
           <section class="card roulette" id="roulette" aria-labelledby="roulette-title">
-            <h2 class="visually-hidden" id="roulette-title">ルーレット</h2>
+            <div class="board-head">
+              <h2 class="board-title" id="roulette-title">抽選モニター</h2>
+              <span class="board-no" id="draw-no"></span>
+            </div>
             <p class="rules-chip" id="rules-chip"></p>
             <div class="reels">
               <div class="reel" id="reel-team">
@@ -178,7 +157,7 @@
                 <div class="reel-window"><div class="reel-strip"></div></div>
               </div>
             </div>
-            <button type="button" class="btn btn-primary btn-spin" id="btn-spin">ルーレットを回す</button>
+            <button type="button" class="btn btn-cta btn-spin" id="btn-spin">ルーレットを回す</button>
             <dl class="counters">
               <div><dt>スピン</dt><dd><b id="count-spins">0</b>回</dd></div>
               <div><dt>パス残り</dt><dd><b id="count-passes">3</b>回</dd></div>
@@ -205,7 +184,7 @@
           </section>
 
           <section class="card history" id="history" aria-labelledby="history-title">
-            <h2 class="card-title" id="history-title">スピン履歴</h2>
+            <h2 class="card-title" id="history-title">抽選履歴</h2>
             <ol class="history-list" id="history-list"></ol>
           </section>
         </div>
@@ -230,10 +209,10 @@
         <section class="card prose">
           <h3>遊び方の流れ</h3>
           <ol class="steps">
-            <li><b>ルールを決める</b><span>年度範囲・パス上限などを選んで「プレイボール！」。初期設定のままでも遊べます。</span></li>
+            <li><b>ルールを決める</b><span>年度範囲・パス上限などを選んで「ドラフト開始！」。初期設定のままでも遊べます。</span></li>
             <li><b>ルーレットを回す</b><span>「球団×年度」が1つ決まります。同じ組み合わせは二度出ません。</span></li>
-            <li><b>1人だけ指名する</b><span>その年のその球団の指名選手から1人を選び、空いている枠に入れます。いらなければパス。</span></li>
-            <li><b>17枠が埋まったら完成</b><span>テキストや画像で共有したり、編成を保存したりできます。</span></li>
+            <li><b>1人だけ指名する</b><span>その年のその球団の指名選手から1人を選び、空いている枠に入れます。指名すると「第○巡選択希望選手」として発表されます。いらなければパス。</span></li>
+            <li><b>17人そろったら「選択終了」</b><span>テキストや画像で共有したり、編成を保存したりできます。</span></li>
           </ol>
         </section>
 
@@ -324,10 +303,28 @@
       <p class="sheet-summary" id="pd-summary" aria-live="polite"></p>
       <div class="sheet-actions">
         <button type="submit" class="btn" value="cancel" formnovalidate>戻る</button>
-        <button type="button" class="btn btn-primary" id="pd-confirm" disabled>確定（変更不可）</button>
+        <button type="button" class="btn btn-primary" id="pd-confirm" disabled>指名する（変更不可）</button>
       </div>
     </form>
   </dialog>
+
+  <!-- 指名の発表（ドラフト会議の読み上げ風） -->
+  <div class="announce" id="announce" hidden aria-live="assertive">
+    <div class="announce-card" id="announce-card">
+      <div class="announce-head">
+        <span class="announce-kicker">DRAFT ROULETTE</span>
+        <span class="announce-round" id="an-round"></span>
+      </div>
+      <div class="announce-body">
+        <p class="announce-team" id="an-team"></p>
+        <p class="announce-name" id="an-name"></p>
+        <p class="announce-meta" id="an-meta"></p>
+        <p class="announce-slot" id="an-slot"></p>
+      </div>
+      <div class="announce-stamp" id="an-stamp"></div>
+    </div>
+    <p class="announce-tap">タップで次へ</p>
+  </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>

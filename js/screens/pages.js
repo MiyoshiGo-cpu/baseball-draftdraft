@@ -2,15 +2,13 @@
 
 import * as G from "../game.js";
 import * as storage from "../storage.js";
-import { shortYear } from "../teams.js";
 import { sfx, unlockAudio } from "../sound.js";
-import { CHANGE_TYPES, CHANGELOG, VERSION, formatChangelogDate } from "../version.js";
+import { CHANGE_TYPES, CHANGELOG, VERSION_ID, VERSION_LABEL, formatChangelogDate, versionLabel } from "../version.js";
 import { $, esc, formatDate, setBarTitle, toast } from "../dom.js";
 import { go, goUp } from "../router.js";
 import {
   app,
   discardGame,
-  draftShort,
   hasGameInProgress,
   loadData,
   progressText,
@@ -54,7 +52,7 @@ const ICON = {
 /** 前回見たときより新しいバージョンになっているか。 */
 export function hasUnseenVersion() {
   const seen = storage.loadSeenVersion();
-  return seen !== null && seen !== VERSION;
+  return seen !== null && seen !== VERSION_ID;
 }
 
 function renderVersionBadges() {
@@ -65,35 +63,59 @@ function renderVersionBadges() {
 // タイトル画面
 // ===========================================================================
 
-let tickerFilled = false;
 const FIRST_ROUND = new Set(["1位", "1巡目", "1次1位", "高校1巡目", "大社1巡目", "自由獲得枠", "希望入団枠", "大社希望入団枠"]);
+const MONITOR_INTERVAL_MS = 3600;
 
-/** タイトル画面に流す「'12 日本ハム 1位 大谷翔平」のような帯（実データから無作為に選ぶ）。 */
-function fillTicker() {
-  if (tickerFilled || !app.data) return;
-  const firsts = [];
+let monitorPool = null;
+let monitorTimer = 0;
+
+/** 会場モニターで発表する歴代の1位指名（入団した選手）。 */
+function firstRoundPool() {
+  if (monitorPool || !app.data) return monitorPool;
+  monitorPool = [];
   for (const d of app.data.pairList) {
     for (const p of d.picks) {
-      if (p.draftType === "regular" && p.signed && FIRST_ROUND.has(p.roundLabel)) {
-        firsts.push({ d, p });
-      }
+      if (p.draftType === "regular" && p.signed && FIRST_ROUND.has(p.roundLabel)) monitorPool.push({ d, p });
     }
   }
-  const items = [];
-  for (let i = 0; i < 18 && firsts.length; i++) {
-    const { d, p } = firsts.splice(Math.floor(Math.random() * firsts.length), 1)[0];
-    items.push(
-      `<span class="ticker-item"><span class="ticker-meta">${esc(shortYear(d.year))} ${esc(draftShort(d))}</span>${esc(p.name)}</span>`,
-    );
-  }
-  // 2周分並べて、半分ずらすと継ぎ目なく流れる
-  $("title-ticker").innerHTML = items.join("") + items.join("");
-  tickerFilled = true;
+  return monitorPool;
+}
+
+/** 「第1巡選択希望選手」のような見出し。自由獲得枠などは枠の名前をそのまま使う。 */
+function roundHeading(label) {
+  return /^(1位|1巡目|1次1位|高校1巡目|大社1巡目)$/.test(label) ? "第1巡選択希望選手" : `${label.replace(/^大社/, "")} 選択希望選手`;
+}
+
+/** 会場モニターに次の選手を出す。 */
+function showNextOnMonitor() {
+  const pool = firstRoundPool();
+  if (!pool || pool.length === 0) return;
+  const { d, p } = pool[Math.floor(Math.random() * pool.length)];
+  const el = $("title-monitor");
+  el.classList.remove("is-changing");
+  void el.offsetWidth; // アニメーションをやり直す
+  el.innerHTML = `
+    <p class="monitor-round">${esc(roundHeading(p.roundLabel))}</p>
+    <p class="monitor-team">${d.year}年 ${esc(d.teamName)}</p>
+    <p class="monitor-name">${esc(p.name)}</p>
+    <p class="monitor-meta">${esc(p.pos)} ・ ${esc(p.from)}</p>`;
+  el.classList.add("is-changing");
+}
+
+function startMonitor() {
+  stopMonitor();
+  if (!app.data) return;
+  showNextOnMonitor();
+  monitorTimer = setInterval(showNextOnMonitor, MONITOR_INTERVAL_MS);
+}
+
+function stopMonitor() {
+  clearInterval(monitorTimer);
+  monitorTimer = 0;
 }
 
 function renderTitle() {
   renderVersionBadges();
-  fillTicker();
   const hint = $("title-continue");
   if (app.data && hasGameInProgress()) {
     hint.hidden = false;
@@ -108,10 +130,16 @@ export const titleScreen = {
   needsData: false,
   enter() {
     renderTitle();
-    // データが読み込めたら、帯と「進行中のゲーム」の表示を更新する
+    // データが読み込めたら、会場モニターと「進行中のゲーム」の表示を始める
     loadData()
-      .then(() => renderTitle())
+      .then(() => {
+        renderTitle();
+        if (document.documentElement.dataset.screen === "title") startMonitor();
+      })
       .catch(() => {});
+  },
+  leave() {
+    stopMonitor();
   },
 };
 
@@ -156,7 +184,7 @@ function renderMenu() {
     { go: "saved", label: "保存したチーム", sub: `${savedCount}件`, icon: ICON.saved },
     { go: "howto", label: "遊び方", sub: "ルールと流れ", icon: ICON.howto },
     { go: "options", label: "オプション", sub: "効果音・データ", icon: ICON.options },
-    { go: "changelog", label: "更新ログ", sub: `v${VERSION}`, icon: ICON.changelog, badge: hasUnseenVersion() },
+    { go: "changelog", label: "更新ログ", sub: VERSION_LABEL, icon: ICON.changelog, badge: hasUnseenVersion() },
   ];
   $("menu-body").innerHTML = `
     <button type="button" class="menu-hero" data-go="setup">
@@ -178,7 +206,7 @@ function renderMenu() {
         .join("")}
     </div>
     <button type="button" class="menu-link" data-go="credits">${ICON.credits}<span>クレジット・出典</span>${ICON.chevron}</button>
-    <p class="menu-foot">ドラフトルーレット v${VERSION}<br>非公式のファンメイドツールです。NPB・各球団とは関係ありません。</p>`;
+    <p class="menu-foot">ドラフトルーレット ${VERSION_LABEL}<br>非公式のファンメイドツールです。NPB・各球団とは関係ありません。</p>`;
 }
 
 export const menuScreen = {
@@ -272,7 +300,7 @@ export const creditsScreen = {
   parent: "menu",
   needsData: false,
   enter() {
-    $("credits-version").textContent = `v${VERSION}`;
+    $("credits-version").textContent = VERSION_LABEL;
   },
 };
 
@@ -313,7 +341,7 @@ function renderOptions() {
     <section class="card option-card">
       <h2 class="card-title">このアプリについて</h2>
       <dl class="about-list">
-        <div><dt>バージョン</dt><dd>v${VERSION}</dd></div>
+        <div><dt>バージョン</dt><dd>${VERSION_LABEL}</dd></div>
         <div><dt>収録データ</dt><dd>${data.yearMin}〜${data.yearMax}年度<br>${games}組・${players.toLocaleString("ja-JP")}人</dd></div>
         <div><dt>データ作成日</dt><dd>${esc(generated)}</dd></div>
       </dl>
@@ -338,7 +366,7 @@ function onOptionsClick(event) {
     if (!window.confirm("すべてのデータを消して、最初の状態に戻しますか？\nこの操作は取り消せません。")) return;
     storage.clearAll();
     discardGame();
-    storage.saveSeenVersion(VERSION);
+    storage.saveSeenVersion(VERSION_ID);
     toast("すべてのデータを初期化しました");
     // 効果音などの表示も初期値に戻す
     document.dispatchEvent(new CustomEvent("dr:sound-changed"));
@@ -361,12 +389,12 @@ export const optionsScreen = {
 
 function renderChangelog() {
   $("changelog-body").innerHTML = `
-    <p class="cl-current">現在のバージョン：<b>v${esc(VERSION)}</b></p>
+    <p class="cl-current">現在のバージョン：<b>${esc(VERSION_LABEL)}</b></p>
     <ol class="changelog">${CHANGELOG.map(
       (entry) => `
       <li class="cl-entry card">
         <div class="cl-head">
-          <span class="cl-version">v${esc(entry.version)}</span>
+          <span class="cl-version">${esc(versionLabel(entry.stage, entry.version))}</span>
           <span class="cl-date">${esc(formatChangelogDate(entry.date))}</span>
         </div>
         <p class="cl-title">${esc(entry.title)}</p>
@@ -386,7 +414,7 @@ export const changelogScreen = {
   needsData: false,
   enter() {
     renderChangelog();
-    storage.saveSeenVersion(VERSION);
+    storage.saveSeenVersion(VERSION_ID);
     renderVersionBadges();
   },
 };
@@ -397,9 +425,9 @@ export const changelogScreen = {
 
 export function initPages() {
   // 初めて見たバージョンを記録しておき、次に更新されたときだけ「NEW」を出す
-  if (storage.loadSeenVersion() === null) storage.saveSeenVersion(VERSION);
-  $("app-version").textContent = `v${VERSION}`;
-  $("btn-version").setAttribute("aria-label", `バージョン ${VERSION}。更新ログを開く`);
+  if (storage.loadSeenVersion() === null) storage.saveSeenVersion(VERSION_ID);
+  $("app-version").textContent = VERSION_LABEL;
+  $("btn-version").setAttribute("aria-label", `バージョン ${VERSION_LABEL}。更新ログを開く`);
   renderVersionBadges();
 
   $("btn-play").addEventListener("click", () => {

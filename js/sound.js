@@ -90,12 +90,23 @@ export const sfx = {
     tone({ freq: 659.25, type: "triangle", dur: 0.1, gain: 0.16 });
     tone({ freq: 987.77, type: "triangle", start: 0.08, dur: 0.22, gain: 0.16 });
   },
-  /** プレイボール */
+  /** ドラフト開始 */
   playball() {
     tone({ freq: 392, type: "square", dur: 0.12, gain: 0.08 });
     tone({ freq: 523.25, type: "square", start: 0.12, dur: 0.12, gain: 0.08 });
     tone({ freq: 659.25, type: "square", start: 0.24, dur: 0.12, gain: 0.08 });
     tone({ freq: 783.99, type: "triangle", start: 0.36, dur: 0.4, gain: 0.16 });
+  },
+  /** 指名の発表（会場のチャイム） */
+  announce() {
+    tone({ freq: 783.99, type: "sine", dur: 0.32, gain: 0.2 });
+    tone({ freq: 659.25, type: "sine", start: 0.22, dur: 0.32, gain: 0.2 });
+    tone({ freq: 523.25, type: "sine", start: 0.44, dur: 0.5, gain: 0.2 });
+  },
+  /** 「交渉権確定」のはんこ */
+  stamp() {
+    tone({ freq: 140, to: 70, type: "sine", dur: 0.18, gain: 0.35 });
+    tone({ freq: 900, to: 400, type: "triangle", dur: 0.06, gain: 0.08 });
   },
   /** できない操作の音 */
   error() {

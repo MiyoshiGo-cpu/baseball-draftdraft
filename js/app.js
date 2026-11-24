@@ -7,6 +7,7 @@ import { buildShareText, copyText, drawShareImage, pickMeta, saveCanvasImage } f
 import { eraShort } from "./teams.js";
 import { setSoundEnabled } from "./sound.js";
 import { esc, fileStamp, formatDate, toast } from "./dom.js";
+import { VERSION_LABEL } from "./version.js";
 
 export const app = {
   /** @type {ReturnType<typeof G.indexData> | null} */
@@ -135,6 +136,7 @@ export function teamHTML(snapshot, { highlight = null } = {}) {
           ? `<span class="slot-player"><span class="slot-name">${esc(p.name)}</span><span class="slot-meta">${meta(p)}</span></span>`
           : `<span class="slot-player slot-empty-text">空き</span>`
       }
+      ${p && p.round ? `<span class="slot-round">第${p.round}巡</span>` : "<span></span>"}
     </li>`;
   const lineup = snapshot.lineup
     .map((r) => row(`${r.order}`, r.player, `<span class="slot-pos">${r.field ? esc(r.field) : ""}</span>`))
@@ -162,7 +164,10 @@ export async function shareText(snapshot) {
 
 export async function shareImage(snapshot, date = new Date()) {
   try {
-    const canvas = drawShareImage(snapshot, slotShort, { dateText: formatDate(date.toISOString()) });
+    const canvas = drawShareImage(snapshot, slotShort, {
+      dateText: formatDate(date.toISOString()),
+      footer: `ドラフトルーレット ${VERSION_LABEL}`,
+    });
     const how = await saveCanvasImage(canvas, `draft-roulette-${fileStamp(date)}.png`);
     if (how === "downloaded") toast("画像を保存しました");
     else if (how === "shared") toast("画像を共有しました");
