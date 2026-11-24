@@ -1,0 +1,67 @@
+{
+  "_comment": "当時の球団名（Wikipedia記事の見出し表記）→ 球団スロット id の対応表。ここにない球団名が出たら build_drafts.py は停止する。推測で割り当てないこと。",
+  "slots": [
+    { "id": "giants", "short": "巨人" },
+    { "id": "tigers", "short": "阪神" },
+    { "id": "dragons", "short": "中日" },
+    { "id": "carp", "short": "広島" },
+    { "id": "swallows", "short": "ヤクルト" },
+    { "id": "baystars", "short": "DeNA" },
+    { "id": "lions", "short": "西武" },
+    { "id": "marines", "short": "ロッテ" },
+    { "id": "fighters", "short": "日本ハム" },
+    { "id": "hawks", "short": "ソフトバンク" },
+    { "id": "buffaloes", "short": "オリックス" },
+    { "id": "kintetsu_rakuten", "short": "近鉄・楽天" }
+  ],
+  "teams": {
+    "読売ジャイアンツ": "giants",
+
+    "阪神タイガース": "tigers",
+
+    "中日ドラゴンズ": "dragons",
+
+    "広島カープ": "carp",
+    "広島東洋カープ": "carp",
+
+    "サンケイスワローズ": "swallows",
+    "サンケイアトムズ": "swallows",
+    "アトムズ": "swallows",
+    "ヤクルトアトムズ": "swallows",
+    "ヤクルトスワローズ": "swallows",
+    "東京ヤクルトスワローズ": "swallows",
+
+    "大洋ホエールズ": "baystars",
+    "横浜大洋ホエールズ": "baystars",
+    "横浜ベイスターズ": "baystars",
+    "横浜DeNAベイスターズ": "baystars",
+
+    "西鉄ライオンズ": "lions",
+    "太平洋クラブライオンズ": "lions",
+    "クラウンライターライオンズ": "lions",
+    "西武ライオンズ": "lions",
+    "埼玉西武ライオンズ": "lions",
+
+    "東京オリオンズ": "marines",
+    "ロッテオリオンズ": "marines",
+    "千葉ロッテマリーンズ": "marines",
+
+    "東映フライヤーズ": "fighters",
+    "日拓ホームフライヤーズ": "fighters",
+    "日本ハムファイターズ": "fighters",
+    "北海道日本ハムファイターズ": "fighters",
+
+    "南海ホークス": "hawks",
+    "福岡ダイエーホークス": "hawks",
+    "福岡ソフトバンクホークス": "hawks",
+
+    "阪急ブレーブス": "buffaloes",
+    "オリックス・ブレーブス": "buffaloes",
+    "オリックス・ブルーウェーブ": "buffaloes",
+    "オリックス・バファローズ": "buffaloes",
+
+    "近鉄バファローズ": "kintetsu_rakuten",
+    "大阪近鉄バファローズ": "kintetsu_rakuten",
+    "東北楽天ゴールデンイーグルス": "kintetsu_rakuten"
+  }
+}
