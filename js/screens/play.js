@@ -7,6 +7,8 @@ import { sfx, unlockAudio } from "../sound.js";
 import { $, esc, isNarrow, reduceMotion, scrollToEl, toast } from "../dom.js";
 import { go, goUp } from "../router.js";
 import { openPlayerByPickId } from "./player.js";
+import { hideCareer, showCareer } from "./career.js";
+import { careerSummary } from "../career.js";
 import {
   app,
   draftShort,
@@ -33,6 +35,7 @@ const ui = {
   spinning: false,
   place: null, // 配置モーダルの選択 { pickId, kind, pos, order }
   justPlaced: null,
+  rating: null, // 答え合わせの総合力のまとめ（保存するときに一緒に入れる）
 };
 
 // ===========================================================================
@@ -137,6 +140,7 @@ function renderGame() {
   $("rules-chip").textContent = settingsBrief(state.settings);
   $("footer-seed").textContent = `シード：${state.seed}`;
   renderResult();
+  renderCareerCard();
   renderRoulette();
   renderDirectory();
   renderTeam();
@@ -161,7 +165,7 @@ function renderResult() {
     <p class="result-stats">指名<b>${filled}</b>名・スピン<b>${G.spinCount(state)}</b>回・パス<b>${state.passesUsed}</b>回</p>
     ${
       complete
-        ? `<p class="result-note">全${G.TOTAL_SLOTS}名の指名が完了しました。</p>`
+        ? `<p class="result-note">全${G.TOTAL_SLOTS}名の指名が完了しました。下の「答え合わせ」で、キャリアハイの成績とチームの総合力を見られます。</p>`
         : `<p class="result-note">抽選できる「球団×年度」がなくなりました（${filled}/${G.TOTAL_SLOTS}名）。</p>`
     }
     <div class="result-actions">
@@ -175,6 +179,31 @@ function renderResult() {
       <button type="button" class="btn btn-cta" data-act="again">もう一度遊ぶ</button>
       <button type="button" class="btn" data-act="menu">メニューへ</button>
     </div>`;
+}
+
+/** 完成画面の答え合わせ（キャリアハイと総合力）。年度を選び直したら、保存済みのチームにも反映する。 */
+function renderCareerCard() {
+  const { state, data } = app;
+  const done = state.status === "complete" || state.status === "stuck";
+  if (!done) {
+    ui.rating = null;
+    hideCareer("career");
+    return;
+  }
+  showCareer("career", G.teamSnapshot(state, data), {
+    onChange(pickId, year) {
+      app.state = G.setCareerYear(app.state, pickId, year);
+      persistGame();
+      const snapshot = G.teamSnapshot(app.state, app.data);
+      const id = teamId(app.state);
+      storage.updateSaved(id, (e) => ({ ...e, team: { ...e.team, careerYears: snapshot.careerYears } }));
+      return snapshot;
+    },
+    onRender(result) {
+      ui.rating = careerSummary(result);
+      storage.updateSaved(teamId(app.state), (e) => ({ ...e, rating: ui.rating }));
+    },
+  });
 }
 
 function renderRoulette() {
@@ -672,7 +701,9 @@ function onResultClick(event) {
       shareImage(snapshot);
       break;
     case "save": {
-      const ok = storage.addSaved({ id: teamId(app.state), savedAt: new Date().toISOString(), team: snapshot });
+      const entry = { id: teamId(app.state), savedAt: new Date().toISOString(), team: snapshot };
+      if (ui.rating) entry.rating = ui.rating;
+      const ok = storage.addSaved(entry);
       toast(ok ? "保存しました（メニューの「保存したチーム」から見られます）" : "保存できませんでした（ブラウザの保存領域が使えません）");
       renderResult();
       break;
@@ -698,8 +729,10 @@ export const gameScreen = {
     renderGame();
   },
   leave() {
-    const dlg = $("place-dialog");
-    if (dlg.open) dlg.close();
+    for (const id of ["place-dialog", "season-dialog"]) {
+      const dlg = $(id);
+      if (dlg.open) dlg.close();
+    }
     if (closeAnnounce) closeAnnounce();
   },
 };

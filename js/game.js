@@ -132,7 +132,30 @@ export function createGame(settings, seed) {
     roster: emptyRoster(),
     passesUsed: 0,
     history: [],
+    careerYears: {},
   };
+}
+
+/** 年度の値として正しいか（答え合わせで選び直した年度）。 */
+const isYear = (y) => Number.isInteger(y) && y >= 1900 && y <= 2100;
+
+/** 答え合わせで選び直した年度の表（pickId → 年度）を、チームにいる選手の分だけに整える。 */
+export function normalizeCareerYears(input, pickIds) {
+  const out = {};
+  if (!input || typeof input !== "object") return out;
+  const allowed = new Set(pickIds);
+  for (const [id, y] of Object.entries(input)) if (allowed.has(id) && isYear(y)) out[id] = y;
+  return out;
+}
+
+/** 答え合わせの年度を選び直す。year が null なら自動（キャリアハイ）に戻す。 */
+export function setCareerYear(state, pickId, year) {
+  if (!rosterPickIds(state.roster).includes(pickId)) throw new GameError("チームにいない選手です");
+  const careerYears = { ...(state.careerYears || {}) };
+  if (year === null || year === undefined) delete careerYears[pickId];
+  else if (isYear(year)) careerYears[pickId] = year;
+  else throw new GameError("年度が正しくありません");
+  return { ...state, careerYears };
 }
 
 /** 設定を変える。効果音以外は1回目のスピンの前だけ変えられる。 */
@@ -434,6 +457,7 @@ export function teamSnapshot(state, data) {
     passes: state.passesUsed,
     complete: isComplete(state),
     settings: { ...state.settings },
+    careerYears: { ...(state.careerYears || {}) },
   };
 }
 
@@ -471,6 +495,7 @@ export function restoreState(raw, data) {
       },
       passesUsed: Math.max(0, Number(raw.passesUsed) || 0),
       history: raw.history.map((h) => ({ ...h })),
+      careerYears: normalizeCareerYears(raw.careerYears, ids),
     };
   } catch {
     return null;

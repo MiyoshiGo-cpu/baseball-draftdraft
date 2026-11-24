@@ -141,6 +141,7 @@
       <div class="layout">
         <div class="col col-play">
           <section class="card result" id="result" hidden aria-live="polite"></section>
+          <section class="card career" id="career" data-career-root hidden aria-label="答え合わせ"></section>
 
           <section class="card roulette" id="roulette" aria-labelledby="roulette-title">
             <div class="board-head">
@@ -215,6 +216,7 @@
             <li><b>ルーレットを回す</b><span>「球団×年度」が1つ決まります。同じ組み合わせは二度出ません。</span></li>
             <li><b>1人だけ指名する</b><span>その年のその球団の指名選手から1人を選び、空いている枠に入れます。指名すると「第○巡選択希望選手」として発表されます。いらなければパス。</span></li>
             <li><b>17人そろったら「選択終了」</b><span>テキストや画像で共有したり、編成を保存したりできます。</span></li>
+            <li><b>答え合わせ</b><span>選んだ選手のキャリアハイの成績と、チームの総合力（S〜E）が出ます。選手をタップすると、ほかの年度に選び直せます。</span></li>
           </ol>
         </section>
 
@@ -278,6 +280,11 @@
           <p>選手名は指名当時の表記です。データの誤りに気づいたら、元の記事もあわせて確認してください。</p>
         </section>
         <section class="card prose">
+          <h3>選手データ（成績・プロフィール）</h3>
+          <p>選手の詳細と答え合わせの成績は、Wikipedia日本語版の各選手の記事をもとに作成しています（<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.ja" rel="license noopener" target="_blank">CC BY-SA 4.0</a>）。成績は NPB の一軍のみです。</p>
+          <p>キャリアハイの選び方と総合力の点数は、このアプリ独自の目安です。</p>
+        </section>
+        <section class="card prose">
           <h3>注意事項</h3>
           <p>非公式のファンメイドツールです。NPB・各球団とは関係ありません。球団ロゴや選手写真は使っていません。</p>
         </section>
@@ -326,6 +333,24 @@
         <p class="sheet-meta" id="pl-meta"></p>
       </div>
       <div class="sheet-scroll" id="pl-body"></div>
+    </div>
+  </dialog>
+
+  <!-- 答え合わせの年度を選ぶ -->
+  <dialog class="sheet sheet-season" id="season-dialog" aria-labelledby="sd-title">
+    <div class="sheet-body">
+      <div class="sheet-head">
+        <div class="sheet-head-row">
+          <h2 class="sheet-title" id="sd-title"></h2>
+          <button type="button" class="head-info-btn" id="sd-info">選手の詳細</button>
+          <button type="button" class="head-close-btn" id="sd-close" aria-label="閉じる">
+            <svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <p class="sheet-meta" id="sd-meta"></p>
+      </div>
+      <p class="sd-rule" id="sd-rule"></p>
+      <ul class="sheet-scroll season-list" id="sd-list"></ul>
     </div>
   </dialog>
 

@@ -5,7 +5,7 @@
 
 /** "beta"（ベータ版）または "release"（正式版） */
 export const STAGE = "beta";
-export const VERSION = "1.5";
+export const VERSION = "1.6";
 
 export const STAGE_ORDER = ["beta", "release"];
 
@@ -37,6 +37,22 @@ export const CHANGE_TYPES = {
  *   changes: [{ type: "new" | "improve" | "change" | "fix" | "data", text }] }
  */
 export const CHANGELOG = [
+  {
+    stage: "beta",
+    version: "1.6",
+    date: "2026-11-24",
+    title: "答え合わせ（キャリアハイと総合力）",
+    changes: [
+      { type: "new", text: "完成画面の「答え合わせ」：入れた枠に合わせて、各選手のキャリアハイの年度を自動で選び、その年の成績を表示（スタメン・控えは規定打席に届いた年で OPS が最も高い年、先発は勝利数、中継ぎはセーブとホールドの合計、抑えはセーブが最も多い年）" },
+      { type: "new", text: "答え合わせの選手をタップすると、ほかの年度に選び直せる（選んだ年度は保存したチームにも残る）" },
+      { type: "new", text: "選手ごとの評価（S〜E と 0〜100 点）、チームの総合力（全体・打線・投手陣）、スタメンと投手陣の合計成績" },
+      { type: "improve", text: "シェア画像に、総合力と各選手のキャリアハイの成績を追加。テキストのコピーにも総合力の行を追加" },
+      { type: "improve", text: "保存したチームの一覧に総合力のランクを表示し、チームの詳細にも答え合わせを表示" },
+      { type: "fix", text: "選手の詳細で、セーブとホールドがすべて「-」になっていたのを修正（Wikipedia の成績表の縦書きの見出しを読み取れていなかったため）" },
+      { type: "fix", text: "成績表の球団名が「阪急 オリックス」のようにまとめて表示されることがあったのを、その年の球団名に修正" },
+      { type: "improve", text: "画面を移ったときに、開いているシート（選手の詳細など）を閉じるように変更" },
+    ],
+  },
   {
     stage: "beta",
     version: "1.5",

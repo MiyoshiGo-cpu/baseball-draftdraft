@@ -58,6 +58,15 @@ export function addSaved(entry) {
   return write(KEYS.saved, list);
 }
 
+/** 保存したチームを書き換える。fn(entry) が新しい entry を返す。書き換えられたら true。 */
+export function updateSaved(id, fn) {
+  const list = loadSaved();
+  const i = list.findIndex((x) => x.id === id);
+  if (i < 0) return false;
+  list[i] = fn(list[i]);
+  return write(KEYS.saved, list);
+}
+
 export function removeSaved(id) {
   return write(KEYS.saved, loadSaved().filter((x) => x.id !== id));
 }

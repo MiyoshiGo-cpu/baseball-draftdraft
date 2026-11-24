@@ -2,12 +2,49 @@
 // data/players.json の成績は、meta.battingColumns / meta.pitchingColumns の順の配列で、
 // 最後に「リーグ1位（記事で太字）の列の番号」の配列が付くことがある。
 
-/** 配列の1行をオブジェクトにする。lead はリーグ1位の列名の Set。 */
+// 球団名が変わった年（記事の表で「阪急 オリックス」のようにまとめて書かれている球団を、年度ごとの名前に直す）
+const TEAM_FROM = {
+  サンケイ: 1965,
+  アトムズ: 1969,
+  ヤクルト: 1970,
+  東京: 1965,
+  ロッテ: 1969,
+  東映: 1965,
+  日拓: 1973,
+  日本ハム: 1974,
+  西鉄: 1965,
+  太平洋: 1973,
+  クラウン: 1977,
+  西武: 1979,
+  南海: 1965,
+  ダイエー: 1989,
+  ソフトバンク: 2005,
+  阪急: 1965,
+  オリックス: 1989,
+  大洋: 1965,
+  横浜: 1993,
+  DeNA: 2012,
+};
+
+/** 「阪急 オリックス」と 1990 → 「オリックス」。1つだけならそのまま。 */
+export function teamForYear(label, year) {
+  const names = String(label ?? "").trim().split(/\s+/).filter(Boolean);
+  if (names.length <= 1) return names[0] ?? "";
+  let best = null;
+  for (const name of names) {
+    const from = TEAM_FROM[name];
+    if (from !== undefined && from <= year && (best === null || from >= TEAM_FROM[best])) best = name;
+  }
+  return best ?? names.at(-1);
+}
+
+/** 配列の1行をオブジェクトにする。lead はリーグ1位の列名の Set。球団名はその年の名前に直す。 */
 export function rowObject(arr, columns) {
   const obj = {};
   columns.forEach((c, i) => {
     obj[c] = arr[i];
   });
+  if (typeof obj.team === "string" && typeof obj.year === "number") obj.team = teamForYear(obj.team, obj.year);
   const extra = arr[columns.length];
   obj.lead = new Set(Array.isArray(extra) ? extra.map((i) => columns[i]) : []);
   return obj;
