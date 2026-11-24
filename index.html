@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#123829">
+  <meta name="theme-color" content="#0b2a66">
   <meta name="description" content="ルーレットで決まった「球団×年度」のドラフト指名選手から1人ずつ選び、17人の最強チームを作るゲーム。">
   <title>ドラフトルーレット</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='29' fill='%23fffdf7' stroke='%23123829' stroke-width='4'/%3E%3Cpath d='M18 12c6 6 6 34 0 40M46 12c-6 6-6 34 0 40' fill='none' stroke='%23c23b22' stroke-width='3.5' stroke-dasharray='4 3'/%3E%3C/svg%3E">
@@ -11,51 +11,90 @@
   <script type="module" src="js/main.js"></script>
 </head>
 <body>
-  <header class="app-header">
-    <div class="app-header-inner">
-      <div class="app-brand">
-        <svg class="app-logo" viewBox="0 0 64 64" aria-hidden="true">
-          <circle cx="32" cy="32" r="28" fill="currentColor" opacity=".12"/>
-          <circle cx="32" cy="32" r="28" fill="none" stroke="currentColor" stroke-width="4"/>
-          <path d="M18 12c6 6 6 34 0 40M46 12c-6 6-6 34 0 40" fill="none" stroke="var(--stitch)" stroke-width="4" stroke-dasharray="4 4"/>
-        </svg>
-        <div class="app-brand-text">
-          <h1 class="app-title">ドラフトルーレット</h1>
-          <button type="button" class="version-btn" id="btn-version" aria-haspopup="dialog">
-            <span class="version-num" id="app-version"></span><span class="version-link">更新ログ</span><span class="version-new" id="version-new" hidden>NEW</span>
-          </button>
-        </div>
-      </div>
-      <div class="header-actions">
+  <!-- 画面上部のバー（タイトル画面以外） -->
+  <header class="app-bar" id="app-bar" hidden>
+    <div class="app-bar-inner">
+      <button type="button" class="bar-back" id="bar-back" aria-label="戻る">
+        <svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h1 class="bar-title" id="bar-title"></h1>
+      <div class="bar-actions">
         <button type="button" id="btn-sound" class="tool-btn" aria-pressed="true">
           <svg viewBox="0 0 24 24" aria-hidden="true" class="icon icon-sound-on"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
           <svg viewBox="0 0 24 24" aria-hidden="true" class="icon icon-sound-off"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 9.5l5 5M21.5 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
           <span>効果音</span>
         </button>
-        <button type="button" id="btn-saved" class="tool-btn">
-          <svg viewBox="0 0 24 24" aria-hidden="true" class="icon"><path d="M6 3h12v18l-6-4.5L6 21z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
-          <span>保存一覧</span>
-        </button>
-        <button type="button" id="btn-reset" class="tool-btn">
-          <svg viewBox="0 0 24 24" aria-hidden="true" class="icon"><path d="M4 12a8 8 0 1 0 2.4-5.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M4 3.5V8h4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span>リセット</span>
-        </button>
       </div>
     </div>
   </header>
 
-  <main class="layout" id="app" aria-busy="true">
-    <div class="col col-play">
-      <p class="loading" id="loading">データを読み込み中…</p>
+  <!-- データ読み込み中・読み込み失敗 -->
+  <div class="screen-loading" id="screen-loading" hidden role="status" aria-live="polite">
+    <span class="loading-ball" aria-hidden="true"></span>
+    <p id="loading-text">データを読み込み中…</p>
+    <button type="button" class="btn btn-primary" id="btn-retry" hidden>もう一度読み込む</button>
+  </div>
 
-      <section class="card result" id="result" hidden aria-live="polite"></section>
+  <main id="screens">
+    <!-- ================= タイトル画面 ================= -->
+    <section class="screen screen-title" id="screen-title" hidden aria-label="タイトル">
+      <div class="title-backdrop" aria-hidden="true">
+        <span class="title-band title-band-navy"></span>
+        <span class="title-band title-band-red"></span>
+        <span class="title-band title-band-navy-b"></span>
+        <span class="title-watermark">DRAFT</span>
+      </div>
 
-      <details class="card settings" id="settings" hidden>
-        <summary class="settings-summary">
-          <span class="card-title">設定</span>
-          <span class="settings-brief" id="settings-brief"></span>
-        </summary>
-        <form class="settings-form" id="settings-form" autocomplete="off">
+      <div class="title-inner">
+        <div class="title-logo">
+          <p class="title-kicker"><span>あなただけの</span>ドラフト会議</p>
+          <h1 class="title-name"><span class="title-name-1">ドラフト</span><span class="title-name-2">ルーレット</span></h1>
+          <p class="title-en">DRAFT ROULETTE</p>
+        </div>
+
+        <div class="monitor" aria-hidden="true">
+          <div class="monitor-head">
+            <span class="monitor-live">LIVE</span>
+            <span class="monitor-label">会場モニター</span>
+            <span class="monitor-sub">歴代の1位指名</span>
+          </div>
+          <div class="monitor-body" id="title-monitor">
+            <p class="monitor-round">ドラフト会議</p>
+            <p class="monitor-name">まもなく開始</p>
+          </div>
+        </div>
+
+        <div class="title-actions">
+          <button type="button" class="title-play" id="btn-play">
+            <span class="title-play-main">遊ぶ</span>
+            <span class="title-play-sub">START</span>
+          </button>
+          <p class="title-continue" id="title-continue" hidden></p>
+        </div>
+
+        <div class="title-foot">
+          <button type="button" class="version-btn" id="btn-version">
+            <span class="version-num" id="app-version"></span><span class="version-link">更新ログ</span><span class="version-new" id="version-new" hidden>NEW</span>
+          </button>
+          <p class="title-credit">指名データ：Wikipedia日本語版（CC BY-SA 4.0）<br>非公式のファンメイドツールです。NPB・各球団とは関係ありません。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= メニュー ================= -->
+    <section class="screen" id="screen-menu" hidden aria-label="メニュー">
+      <div class="screen-inner menu" id="menu-body"></div>
+    </section>
+
+    <!-- ================= ルール設定 ================= -->
+    <section class="screen" id="screen-setup" hidden aria-label="ルール設定">
+      <div class="screen-inner">
+        <div class="page-hero">
+          <p class="page-kicker">RULES</p>
+          <h2 class="page-title">ドラフト会議のルールを決める</h2>
+          <p class="page-lead">初期設定のままでも、すぐに始められます。</p>
+        </div>
+        <form class="card settings-form" id="setup-form" autocomplete="off">
           <div class="field">
             <span class="field-label" id="label-years">年度範囲</span>
             <div class="field-row" role="group" aria-labelledby="label-years">
@@ -88,59 +127,161 @@
           </label>
           <p class="pair-count" id="pair-count" aria-live="polite"></p>
         </form>
-      </details>
-
-      <section class="card roulette" id="roulette" hidden aria-labelledby="roulette-title">
-        <h2 class="visually-hidden" id="roulette-title">ルーレット</h2>
-        <div class="reels">
-          <div class="reel" id="reel-team">
-            <span class="reel-label">球団</span>
-            <div class="reel-window"><div class="reel-strip"></div></div>
-          </div>
-          <div class="reel reel-year" id="reel-year">
-            <span class="reel-label">年度</span>
-            <div class="reel-window"><div class="reel-strip"></div></div>
-          </div>
+        <p class="setup-warning" id="setup-warning" hidden></p>
+        <div class="setup-actions">
+          <button type="button" class="btn" id="btn-setup-default">初期設定に戻す</button>
+          <button type="button" class="btn btn-cta btn-playball" id="btn-playball">ドラフト開始！</button>
         </div>
-        <button type="button" class="btn btn-primary btn-spin" id="btn-spin">ルーレットを回す</button>
-        <dl class="counters">
-          <div><dt>スピン</dt><dd><b id="count-spins">0</b>回</dd></div>
-          <div><dt>パス残り</dt><dd><b id="count-passes">3</b>回</dd></div>
-          <div><dt>チーム</dt><dd><b id="count-team">0</b>/17</dd></div>
-        </dl>
-        <p class="spin-hint" id="spin-hint" aria-live="polite"></p>
-      </section>
+      </div>
+    </section>
 
-      <section class="card directory" id="directory" hidden aria-labelledby="directory-title">
-        <h2 class="card-title directory-title" id="directory-title"></h2>
-        <ul class="pick-list" id="pick-list"></ul>
-        <div class="action-bar" id="action-bar"></div>
-      </section>
-    </div>
+    <!-- ================= ゲーム ================= -->
+    <section class="screen" id="screen-game" hidden aria-label="ゲーム">
+      <div class="layout">
+        <div class="col col-play">
+          <section class="card result" id="result" hidden aria-live="polite"></section>
 
-    <div class="col col-team">
-      <section class="card team" id="team" hidden aria-labelledby="team-title">
-        <div class="card-head">
-          <h2 class="card-title" id="team-title">マイチーム</h2>
-          <span class="progress-text" id="team-progress">0 / 17</span>
+          <section class="card roulette" id="roulette" aria-labelledby="roulette-title">
+            <div class="board-head">
+              <h2 class="board-title" id="roulette-title">抽選モニター</h2>
+              <span class="board-no" id="draw-no"></span>
+            </div>
+            <p class="rules-chip" id="rules-chip"></p>
+            <div class="reels">
+              <div class="reel" id="reel-team">
+                <span class="reel-label">球団</span>
+                <div class="reel-window"><div class="reel-strip"></div></div>
+              </div>
+              <div class="reel reel-year" id="reel-year">
+                <span class="reel-label">年度</span>
+                <div class="reel-window"><div class="reel-strip"></div></div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-cta btn-spin" id="btn-spin">ルーレットを回す</button>
+            <dl class="counters">
+              <div><dt>スピン</dt><dd><b id="count-spins">0</b>回</dd></div>
+              <div><dt>パス残り</dt><dd><b id="count-passes">3</b>回</dd></div>
+              <div><dt>チーム</dt><dd><b id="count-team">0</b>/17</dd></div>
+            </dl>
+            <p class="spin-hint" id="spin-hint" aria-live="polite"></p>
+          </section>
+
+          <section class="card directory" id="directory" hidden aria-labelledby="directory-title">
+            <h2 class="card-title directory-title" id="directory-title"></h2>
+            <ul class="pick-list" id="pick-list"></ul>
+            <div class="action-bar" id="action-bar"></div>
+          </section>
         </div>
-        <div class="progress" aria-hidden="true"><div class="progress-bar" id="team-progress-bar"></div></div>
-        <div id="team-body"></div>
-      </section>
 
-      <section class="card history" id="history" hidden aria-labelledby="history-title">
-        <h2 class="card-title" id="history-title">スピン履歴</h2>
-        <ol class="history-list" id="history-list"></ol>
-      </section>
-    </div>
+        <div class="col col-team">
+          <section class="card team" id="team" aria-labelledby="team-title">
+            <div class="card-head">
+              <h2 class="card-title" id="team-title">マイチーム</h2>
+              <span class="progress-text" id="team-progress">0 / 17</span>
+            </div>
+            <div class="progress" aria-hidden="true"><div class="progress-bar" id="team-progress-bar"></div></div>
+            <div id="team-body"></div>
+          </section>
+
+          <section class="card history" id="history" aria-labelledby="history-title">
+            <h2 class="card-title" id="history-title">抽選履歴</h2>
+            <ol class="history-list" id="history-list"></ol>
+          </section>
+        </div>
+      </div>
+      <p class="game-foot">指名データ：Wikipedia日本語版（CC BY-SA 4.0）<span id="footer-seed"></span></p>
+    </section>
+
+    <!-- ================= 保存したチーム ================= -->
+    <section class="screen" id="screen-saved" hidden aria-label="保存したチーム">
+      <div class="screen-inner" id="saved-body"></div>
+    </section>
+
+    <!-- ================= 遊び方 ================= -->
+    <section class="screen" id="screen-howto" hidden aria-label="遊び方">
+      <div class="screen-inner">
+        <div class="page-hero">
+          <p class="page-kicker">HOW TO PLAY</p>
+          <h2 class="page-title">ドラフト指名選手で、<wbr>最強の17人を</h2>
+          <p class="page-lead">ルーレットで決まった「球団×年度」の指名選手から1人ずつ選び、チームを完成させるゲームです。</p>
+        </div>
+
+        <section class="card prose">
+          <h3>遊び方の流れ</h3>
+          <ol class="steps">
+            <li><b>ルールを決める</b><span>年度範囲・パス上限などを選んで「ドラフト開始！」。初期設定のままでも遊べます。</span></li>
+            <li><b>ルーレットを回す</b><span>「球団×年度」が1つ決まります。同じ組み合わせは二度出ません。</span></li>
+            <li><b>1人だけ指名する</b><span>その年のその球団の指名選手から1人を選び、空いている枠に入れます。指名すると「第○巡選択希望選手」として発表されます。いらなければパス。</span></li>
+            <li><b>17人そろったら「選択終了」</b><span>テキストや画像で共有したり、編成を保存したりできます。</span></li>
+          </ol>
+        </section>
+
+        <section class="card prose">
+          <h3>チームの枠（17人）</h3>
+          <table class="slots-table">
+            <tbody>
+              <tr><th>スタメン</th><td>9人（打順1〜9番 × 守備位置）</td></tr>
+              <tr><th>控え</th><td>2人（野手）</td></tr>
+              <tr><th>先発</th><td>3人</td></tr>
+              <tr><th>中継ぎ</th><td>2人</td></tr>
+              <tr><th>抑え</th><td>1人</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="card prose">
+          <h3>大事なルール</h3>
+          <ul class="rule-list">
+            <li><b>一度入れたら変えられません。</b>打順も守備位置も、確定したらそのままです。</li>
+            <li><b>投手と野手は分かれています。</b>初期設定（厳格）では、投手は投手枠だけ、野手はスタメン・控えだけに入れられます。二刀流の選手はどちらにも入れられます。</li>
+            <li><b>守備位置は自由です。</b>捕手登録の選手を遊撃に置いてもかまいません。</li>
+            <li><b>同じ選手は2回入れられません。</b>入団拒否のあと別の年に再指名された選手なども対象です。</li>
+            <li><b>パスには上限があります。</b>配置できる選手が1人もいないときは「自動スキップ」で次へ進め、パスは減りません。</li>
+          </ul>
+        </section>
+
+        <section class="card prose tip">
+          <h3>コツ</h3>
+          <p>枠を早く埋めすぎると、守備位置がちぐはぐになったり、投手枠が埋まって大物投手を取れなくなったりします。「今の1人を取るか、後のために温存するか」が勝負どころです。</p>
+        </section>
+
+        <button type="button" class="btn btn-primary btn-wide btn-large" data-go="setup">さっそく遊ぶ</button>
+      </div>
+    </section>
+
+    <!-- ================= オプション ================= -->
+    <section class="screen" id="screen-options" hidden aria-label="オプション">
+      <div class="screen-inner" id="options-body"></div>
+    </section>
+
+    <!-- ================= 更新ログ ================= -->
+    <section class="screen" id="screen-changelog" hidden aria-label="更新ログ">
+      <div class="screen-inner" id="changelog-body"></div>
+    </section>
+
+    <!-- ================= クレジット ================= -->
+    <section class="screen" id="screen-credits" hidden aria-label="クレジット">
+      <div class="screen-inner">
+        <div class="page-hero">
+          <p class="page-kicker">CREDITS</p>
+          <h2 class="page-title">ドラフトルーレット <span id="credits-version"></span></h2>
+        </div>
+        <section class="card prose">
+          <h3>着想</h3>
+          <p>YouTube『日ハムファンが語る。』の企画「ドラフト×ドラフト」、および「ドラフト×ドラフト メーカー」（draft-draft.vercel.app）。このアプリはルールを参考に一から作ったもので、元のサイトのコードは使っていません。</p>
+        </section>
+        <section class="card prose">
+          <h3>指名データ</h3>
+          <p>Wikipedia日本語版「新人選手選択会議 (日本プロ野球)」各年度記事（1965〜2025年度）をもとに作成しています。データは <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.ja" rel="license noopener" target="_blank">CC BY-SA 4.0</a> で提供します。</p>
+          <p>選手名は指名当時の表記です。データの誤りに気づいたら、元の記事もあわせて確認してください。</p>
+        </section>
+        <section class="card prose">
+          <h3>注意事項</h3>
+          <p>非公式のファンメイドツールです。NPB・各球団とは関係ありません。球団ロゴや選手写真は使っていません。</p>
+        </section>
+      </div>
+    </section>
   </main>
-
-  <footer class="app-footer">
-    <p>着想：YouTube『日ハムファンが語る。』の企画「ドラフト×ドラフト」、および「ドラフト×ドラフト メーカー」（draft-draft.vercel.app）</p>
-    <p>指名データ：Wikipedia日本語版「新人選手選択会議 (日本プロ野球)」各年度記事（<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.ja" rel="license noopener" target="_blank">CC BY-SA 4.0</a>）</p>
-    <p>非公式のファンメイドツールです。NPB・各球団とは関係ありません。</p>
-    <p class="footer-seed" id="footer-seed"></p>
-  </footer>
 
   <!-- 配置モーダル -->
   <dialog class="sheet" id="place-dialog" aria-labelledby="pd-title">
@@ -162,34 +303,28 @@
       <p class="sheet-summary" id="pd-summary" aria-live="polite"></p>
       <div class="sheet-actions">
         <button type="submit" class="btn" value="cancel" formnovalidate>戻る</button>
-        <button type="button" class="btn btn-primary" id="pd-confirm" disabled>確定（変更不可）</button>
+        <button type="button" class="btn btn-primary" id="pd-confirm" disabled>指名する（変更不可）</button>
       </div>
     </form>
   </dialog>
 
-  <!-- 保存したチーム -->
-  <dialog class="sheet sheet-tall" id="saved-dialog" aria-labelledby="sd-title">
-    <div class="sheet-body">
-      <div class="sheet-head sheet-head-row">
-        <button type="button" class="btn btn-small" id="sd-back" hidden>一覧へ</button>
-        <h2 class="sheet-title" id="sd-title">保存したチーム</h2>
-        <button type="button" class="btn btn-small" id="sd-close">閉じる</button>
+  <!-- 指名の発表（ドラフト会議の読み上げ風） -->
+  <div class="announce" id="announce" hidden aria-live="assertive">
+    <div class="announce-card" id="announce-card">
+      <div class="announce-head">
+        <span class="announce-kicker">DRAFT ROULETTE</span>
+        <span class="announce-round" id="an-round"></span>
       </div>
-      <div class="sheet-scroll" id="sd-body"></div>
-      <div class="sheet-actions" id="sd-actions" hidden></div>
-    </div>
-  </dialog>
-
-  <!-- 更新ログ -->
-  <dialog class="sheet" id="changelog-dialog" aria-labelledby="cl-title">
-    <div class="sheet-body">
-      <div class="sheet-head sheet-head-row">
-        <h2 class="sheet-title" id="cl-title">更新ログ</h2>
-        <button type="button" class="btn btn-small" id="cl-close">閉じる</button>
+      <div class="announce-body">
+        <p class="announce-team" id="an-team"></p>
+        <p class="announce-name" id="an-name"></p>
+        <p class="announce-meta" id="an-meta"></p>
+        <p class="announce-slot" id="an-slot"></p>
       </div>
-      <div class="sheet-scroll" id="cl-body"></div>
+      <div class="announce-stamp" id="an-stamp"></div>
     </div>
-  </dialog>
+    <p class="announce-tap">タップで次へ</p>
+  </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>

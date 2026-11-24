@@ -65,3 +65,12 @@ export function removeSaved(id) {
 export function isSaved(id) {
   return loadSaved().some((x) => x.id === id);
 }
+
+export function clearSaved() {
+  remove(KEYS.saved);
+}
+
+/** このアプリが保存したデータをすべて消す。 */
+export function clearAll() {
+  for (const key of Object.values(KEYS)) remove(key);
+}

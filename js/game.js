@@ -393,17 +393,29 @@ export function spinCount(state) {
   return state.usedPairs.length;
 }
 
+/** 何巡目に指名したか（配置した順番。1〜17）。pickId → 巡 */
+export function pickRounds(state) {
+  const rounds = new Map();
+  for (const h of state.history) {
+    if (h.action === "pick") rounds.set(h.pickId, rounds.size + 1);
+  }
+  return rounds;
+}
+
 /**
  * 保存・共有用に、チームを選手情報つきで書き出す（データが変わっても再表示できるように）。
- * 各枠は { pickId, name, playerKey, year, franchiseId, teamName, roundLabel, pos, group, twoWay } か null。
+ * 各枠は { pickId, round, name, playerKey, year, franchiseId, teamName, roundLabel, pos, group, twoWay } か null。
+ * round は何巡目に指名したか（配置した順番）。
  */
 export function teamSnapshot(state, data) {
+  const rounds = pickRounds(state);
   const info = (pickId) => {
     const p = data.picks.get(pickId);
     const d = data.pickDraft.get(pickId);
     if (!p || !d) return null;
     return {
       pickId,
+      round: rounds.get(pickId) ?? null,
       name: p.name,
       playerKey: p.playerKey,
       year: d.year,
