@@ -17,6 +17,8 @@ export const app = {
   state: null,
   /** 選手データ（data/players.json）。選手の詳細を開いたときに読み込む */
   players: null,
+  /** 年度・リーグ別の合計成績（data/leagues.json）。WAR の計算に使う。選手データと一緒に読み込む */
+  leagues: null,
   seedParam: parseSeedParam(location.search),
 };
 
@@ -47,13 +49,18 @@ export function loadData() {
 
 let playersPromise = null;
 
-/** 選手データ（成績・プロフィール）を読み込む。大きいので、必要になったときに1回だけ読む。 */
+/** 選手データ（成績・プロフィール）と、WAR の計算に使うリーグのデータを読み込む。大きいので、必要になったときに1回だけ読む。 */
 export function loadPlayers() {
   if (!playersPromise) {
     playersPromise = (async () => {
-      const res = await fetch("data/players.json", { cache: "no-cache" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      app.players = await res.json();
+      const get = async (url) => {
+        const res = await fetch(url, { cache: "no-cache" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      };
+      const [players, leagues] = await Promise.all([get("data/players.json"), get("data/leagues.json")]);
+      app.leagues = leagues;
+      app.players = players;
       return app.players;
     })();
     playersPromise.catch(() => {
@@ -181,7 +188,7 @@ export function teamId(state) {
 /** 答え合わせ（選手データを読み込み済みのときだけ。読み込みを待つとコピーや共有が許可されないことがあるため）。 */
 function careerIfLoaded(snapshot) {
   try {
-    return app.players ? careerTeam(snapshot, app.players) : null;
+    return app.players ? careerTeam(snapshot, app.players, app.leagues) : null;
   } catch {
     return null;
   }

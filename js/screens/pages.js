@@ -233,7 +233,7 @@ function renderSavedList() {
           const names = x.team.lineup.map((r) => r.player?.name).filter(Boolean).join(" / ");
           const r = x.rating;
           return `<li><button type="button" class="saved-item${r ? " has-rating" : ""}" data-saved="${esc(x.id)}">
-              ${r ? `<span class="saved-rating grade grade-${esc(r.rank)}" aria-label="総合力 ${esc(r.rank)}"><b>${esc(r.rank)}</b><small>${Number(r.score) || 0}</small></span>` : ""}
+              ${r ? `<span class="saved-rating grade grade-${esc(r.rank)}" aria-label="総合力 ${esc(r.rank)}"><b>${esc(r.rank)}</b>${Number.isFinite(r.wins) ? `<small>${r.wins}勝</small>` : ""}</span>` : ""}
               <span class="saved-date">${esc(formatDate(x.savedAt))}</span>
               <span class="saved-stats">スピン${x.team.spins}回・パス${x.team.passes}回</span>
               <span class="saved-names">${esc(names)}</span>

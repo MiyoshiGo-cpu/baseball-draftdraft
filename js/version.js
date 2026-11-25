@@ -5,7 +5,7 @@
 
 /** "beta"（ベータ版）または "release"（正式版） */
 export const STAGE = "beta";
-export const VERSION = "1.6";
+export const VERSION = "1.7";
 
 export const STAGE_ORDER = ["beta", "release"];
 
@@ -37,6 +37,21 @@ export const CHANGE_TYPES = {
  *   changes: [{ type: "new" | "improve" | "change" | "fix" | "data", text }] }
  */
 export const CHANGELOG = [
+  {
+    stage: "beta",
+    version: "1.7",
+    date: "2026-11-25",
+    title: "答え合わせを WAR に",
+    changes: [
+      { type: "change", text: "答え合わせの採点を、0〜100点から簡易 WAR（控えレベルの選手と比べて、何勝ぶん上積みしたか）に変更。その年のリーグ平均と比べるので、投高打低などの時代の差が補正される" },
+      { type: "new", text: "チームの予想勝利数（143試合）と、ひとこと（「優勝争い」など）を表示。総合力のランクは予想勝利数で決める（100勝以上で S）" },
+      { type: "change", text: "キャリアハイの年度を「その枠での WAR が最も高い年」に変更。中継ぎ・抑えの枠は、80回を超える年を80回分に割り引いて数える" },
+      { type: "new", text: "選手の詳細に、年度別と通算の WAR を追加" },
+      { type: "data", text: "1965〜2026年のセ・パの年度別の合計成績を収録（NPB.jp の年度別成績から作成。WAR の基準に使う）" },
+      { type: "fix", text: "選手データに韓国・台湾の同名球団（ロッテ・ジャイアンツ、青宝・太平洋、楽天モンキーズ）の成績が混ざっていたのを除外" },
+      { type: "improve", text: "投手の成績の出し方を、その年に先発が中心だったか救援が中心だったかで切り替え" },
+    ],
+  },
   {
     stage: "beta",
     version: "1.6",

@@ -3,7 +3,7 @@
 
 import { KIND_LABELS } from "./game.js";
 import { eraShort, shortYear } from "./teams.js";
-import { statLine } from "./career.js";
+import { fmtWar, statLine } from "./career.js";
 import { fmtEra, fmtRate } from "./stats.js";
 
 const EMPTY = "―";
@@ -14,11 +14,11 @@ export function pickMeta(player, franchiseShort = "") {
   return `${shortYear(player.year)} ${eraShort(player.teamName, franchiseShort)} ${player.roundLabel}`;
 }
 
-/** 「総合力 A（60点）打線 57・投手陣 65」 */
+/** 「総合力 A（予想 91勝52敗・チーム WAR 48.6）打線 30.1・投手陣 18.5」 */
 export function ratingText(career) {
   if (!career) return "";
   const { total, batting, pitching } = career;
-  return `総合力 ${total.rank}（${total.score}点）打線 ${batting.score}・投手陣 ${pitching.score}`;
+  return `総合力 ${total.rank}（予想 ${total.wins}勝${total.losses}敗・チーム WAR ${fmtWar(total.war)}）打線 ${fmtWar(batting.war)}・投手陣 ${fmtWar(pitching.war)}`;
 }
 
 /**
@@ -270,44 +270,62 @@ export function drawShareImage(snapshot, shortOf = () => "", { dateText = "", fo
     ctx.fillText("総合力", ex, ey - 40);
     setFont(ctx, 72, 900);
     ctx.fillText(total.rank, ex, ey + 4);
-    setFont(ctx, 22, 900);
-    ctx.fillText(`${total.score}/100`, ex, ey + 46);
+    setFont(ctx, 24, 900);
+    ctx.fillText(`${total.wins}勝`, ex, ey + 46);
     ctx.textAlign = "left";
 
     const tx = pad + 200;
     const right = W - pad - 28;
+    // 予想成績とひとこと
     ctx.fillStyle = IMG.navy;
-    setFont(ctx, 26, 900);
-    ctx.fillText("答え合わせ（キャリアハイで採点）", tx, top + 38);
-    const bar = (label, part, cy) => {
+    setFont(ctx, 26, 800);
+    ctx.fillText("予想", tx, top + 40);
+    let cx = tx + ctx.measureText("予想 ").width;
+    setFont(ctx, 44, 900);
+    const record = `${total.wins}勝${total.losses}敗`;
+    ctx.fillText(record, cx, top + 38);
+    cx += ctx.measureText(record).width + 16;
+    setFont(ctx, 22, 900);
+    const label = total.label || "";
+    const lw = ctx.measureText(label).width + 24;
+    ctx.fillStyle = "#fff6d6";
+    roundRect(ctx, cx, top + 22, lw, 34, 17);
+    ctx.fill();
+    ctx.fillStyle = "#7a5600";
+    ctx.fillText(label, cx + 12, top + 40);
+    ctx.fillStyle = IMG.muted;
+    setFont(ctx, 22, 700);
+    ctx.textAlign = "right";
+    ctx.fillText(`チーム WAR ${fmtWar(total.war)}`, right, top + 40);
+    ctx.textAlign = "left";
+    const bar = (label, part, full, color, cy) => {
       ctx.fillStyle = IMG.navy;
       setFont(ctx, 26, 900);
       ctx.fillText(label, tx, cy);
       const bx = tx + 104;
-      const bw = right - bx - 130;
+      const bw = right - bx - 100;
       ctx.fillStyle = "#ffffff";
       roundRect(ctx, bx, cy - 9, bw, 18, 9);
       ctx.fill();
-      ctx.fillStyle = (GRADE_COLORS[part.rank] || GRADE_COLORS.E)[0];
-      roundRect(ctx, bx, cy - 9, Math.max(18, (bw * part.score) / 100), 18, 9);
+      ctx.fillStyle = color;
+      roundRect(ctx, bx, cy - 9, Math.max(18, Math.min(1, part.war / full) * bw), 18, 9);
       ctx.fill();
       ctx.fillStyle = IMG.ink;
       setFont(ctx, 32, 900);
       ctx.textAlign = "right";
-      ctx.fillText(String(part.score), right - 62, cy + 1);
+      ctx.fillText(fmtWar(part.war), right, cy + 1);
       ctx.textAlign = "left";
-      drawGrade(ctx, right, cy, part.rank, "", 44);
     };
-    bar("打線", batting, top + 90);
-    bar("投手陣", pitching, top + 142);
+    bar("打線", batting, 40, IMG.navy2, top + 96);
+    bar("投手陣", pitching, 25, IMG.red, top + 144);
     ctx.fillStyle = IMG.muted;
     fitText(
       ctx,
-      `打率${fmtRate(sums.AVG)}・${sums.HR}本・${sums.RBI}打点 ／ ${sums.W}勝・${sums.SV}S・${sums.HLD}H・防御率${fmtEra(sums.ERA)}`,
+      `WAR の合計 ／ 打率${fmtRate(sums.AVG)}・${sums.HR}本・${sums.RBI}打点 ／ ${sums.W}勝・${sums.SV}S・${sums.HLD}H・防御率${fmtEra(sums.ERA)}`,
       tx,
       top + 186,
       right - tx,
-      22,
+      21,
       700,
     );
     y += ratingH;
@@ -365,7 +383,7 @@ export function drawShareImage(snapshot, shortOf = () => "", { dateText = "", fo
       setFont(ctx, 22, 500);
       ctx.fillText(slot?.type === "pit" ? "一軍の投手成績なし" : "一軍の打撃成績なし", nameX, line2);
     }
-    drawGrade(ctx, W - pad, cy, slot?.rank || "E", slot?.score ?? 0, 62);
+    drawGrade(ctx, W - pad, cy, slot?.rank || "E", slot?.season ? fmtWar(slot.war) : "-", 62);
   };
 
   sectionHead("スタメン");
@@ -436,7 +454,11 @@ export function drawShareImage(snapshot, shortOf = () => "", { dateText = "", fo
   ctx.fillStyle = "rgba(255,255,255,0.75)";
   setFont(ctx, 19, 500);
   ctx.textAlign = "right";
-  ctx.fillText(career ? "指名・成績データ：Wikipedia日本語版（CC BY-SA 4.0）" : "指名データ：Wikipedia日本語版（CC BY-SA 4.0）", W - pad, H - 35);
+  ctx.fillText(
+    career ? "指名・成績：Wikipedia日本語版（CC BY-SA 4.0）／リーグ平均：NPB.jp" : "指名データ：Wikipedia日本語版（CC BY-SA 4.0）",
+    W - pad,
+    H - 35,
+  );
   ctx.textAlign = "left";
   return canvas;
 }
