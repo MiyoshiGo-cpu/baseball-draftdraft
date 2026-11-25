@@ -5,7 +5,7 @@
 
 /** "beta"（ベータ版）または "release"（正式版） */
 export const STAGE = "beta";
-export const VERSION = "1.7";
+export const VERSION = "1.8";
 
 export const STAGE_ORDER = ["beta", "release"];
 
@@ -37,6 +37,22 @@ export const CHANGE_TYPES = {
  *   changes: [{ type: "new" | "improve" | "change" | "fix" | "data", text }] }
  */
 export const CHANGELOG = [
+  {
+    stage: "beta",
+    version: "1.8",
+    date: "2026-11-25",
+    title: "WAR に守備と走塁",
+    changes: [
+      { type: "new", text: "WAR に守備を追加：その年・その守備位置のほかの選手と比べた、守備範囲（補殺・刺殺の多さ）、失策の少なさ、併殺、外野の補殺、捕手の盗塁阻止と捕逸から計算（1年・1つの位置で ±15点まで）" },
+      { type: "new", text: "WAR に走塁を追加：盗塁と盗塁死を、その年のリーグ平均の走り方と比べて計算" },
+      { type: "improve", text: "守備位置の補正を、通算の守備位置ではなく、その年に実際に守った位置で計算（指名打者で出た試合は指名打者として減点）" },
+      { type: "improve", text: "点が入りにくい年（統一球の 2011〜2012年など）に打撃の WAR が大きく出すぎていたのを、その年の得点の入りやすさに合わせて補正" },
+      { type: "new", text: "答え合わせと年度選びに「うち守備・走塁」の値、選手の詳細に WAR の内訳（打撃・走塁・守備・守備位置・控えとの差）を表示" },
+      { type: "change", text: "チームの総合力の区切りを調整（S 104勝・A 94勝・B 85勝・C 77勝・D 69勝以上）" },
+      { type: "data", text: "選手データに、年度別の守備成績（刺殺・補殺・失策・併殺、捕手の盗塁企図・盗塁刺・捕逸）と、盗塁死・併殺打を追加" },
+      { type: "fix", text: "「遊撃(SS)」「中堅(CF)」のような見出しの守備成績表を読めておらず、新庄剛志など一部の選手の守備位置が空だったのを修正" },
+    ],
+  },
   {
     stage: "beta",
     version: "1.7",

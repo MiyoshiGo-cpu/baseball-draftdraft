@@ -4,6 +4,7 @@
 import { $, esc } from "../dom.js";
 import { app, loadPlayers } from "../app.js";
 import { AUTO_RULE, RELIEF_IP, careerTeam, fmtWar, seasonValue, statLine } from "../career.js";
+import { fmtWarSigned } from "../war.js";
 import { KIND_LABELS, POSITION_NAMES } from "../game.js";
 import { fmtEra, fmtInt, fmtRate } from "../stats.js";
 import { sfx, unlockAudio } from "../sound.js";
@@ -36,6 +37,13 @@ function scaledNote(value) {
   return value.scaled ? `<span class="cr-note">シーズン WAR ${fmtWar(value.seasonWar)} を${RELIEF_IP}回分に換算</span>` : "";
 }
 
+/** 打者の WAR のうち、守備と走塁の分 */
+function partsNote(season, type) {
+  const p = season?.warParts;
+  if (type !== "bat" || !p) return "";
+  return `<span class="cr-note">うち守備 ${fmtWarSigned(p.fielding)}・走塁 ${fmtWarSigned(p.baserunning)}</span>`;
+}
+
 function slotLabelHTML(slot) {
   if (slot.kind === "lineup") {
     return `<span class="cr-slot"><span class="cr-order">${slot.order}</span><span class="cr-pos">${esc(slot.field || "")}</span></span>`;
@@ -59,7 +67,7 @@ function rowHTML(slot, editable) {
       <span class="cr-name">${esc(p.name)}</span>
       ${year}
       ${s ? `<span class="cr-stats">${statsHTML(s, slot.kind)}</span>` : ""}
-      ${scaledNote(slot)}
+      ${partsNote(s, slot.type)}${scaledNote(slot)}
     </span>
     ${gradeHTML(slot.rank, slot.season ? slot.war : null)}`;
   if (editable && slot.seasons.length) {
@@ -131,7 +139,9 @@ export function careerHTML(result, { editable = true } = {}) {
       <summary>WAR と採点のしかた</summary>
       <ul>
         <li><b>WAR</b> は「控えレベルの選手と比べて、その年に何勝ぶん上積みしたか」です。公式の NPB の WAR は公開されていないので、このアプリが成績から計算した目安です。その年のリーグ平均と比べるので、投高打低などの時代の差は補正されます。</li>
-        <li>打者は、打撃（出塁と長打の価値）、守備位置（捕手・遊撃は加点、一塁は減点）、出場の多さから計算します。守備の上手さ・走塁・球場の違いは入りません。投手は、防御率がリーグ平均よりどれだけ良いかと投球回から計算し、接戦の終盤に投げた救援（セーブ・ホールド）は少し重く数えます。</li>
+        <li>打者は、打撃（出塁と長打の価値）、走塁（盗塁と盗塁死）、守備、守備位置（捕手・遊撃は加点、一塁・指名打者は減点）、出場の多さから計算します。</li>
+        <li>守備は、その年・その守備位置のほかの選手と比べた、守備範囲（補殺・刺殺の多さ）、失策の少なさ、併殺、外野の補殺、捕手の盗塁阻止と捕逸から計算します。守備範囲は投手陣や球場の影響も受けるので控えめに数え、1年・1つの位置で ±15点（およそ ±1.5勝）までにしています。Wikipedia に守備成績がない選手は 0 です。</li>
+        <li>投手は、防御率がリーグ平均よりどれだけ良いかと投球回から計算し、接戦の終盤に投げた救援（セーブ・ホールド）は少し重く数えます。球場の違い・盗塁以外の走塁・捕手のリードは入りません。</li>
         <li>年度は、その枠での WAR が最も高い年を自動で選びます（打者の枠は打撃、投手の枠は投手の WAR）。中継ぎ・抑えの枠は投げる回数が少ないので、${RELIEF_IP}回を超える年は${RELIEF_IP}回分に割り引いて数えます。投手の枠に一軍の投手成績がない選手を入れると、その枠は0です（打者の枠も同じ）。</li>
         <li>ランクは、選手は WAR 7以上で S（MVP 級）、5以上で A、3以上で B、2以上で C、1以上で D です。中継ぎ・抑えは 3.5・2.5・1.5・1・0.5 で区切ります。</li>
         <li>チームは、17人の WAR の合計（控えは出場が少ないので 1/4）に、控えレベルの選手だけのチームの勝ち数（143試合で42勝）を足して、予想勝利数を出します。100勝以上で S、90勝以上で A、82勝以上で B、74勝以上で C、66勝以上で D です。</li>
@@ -220,7 +230,7 @@ function openSeasonSheet(rootId, pickId) {
               isAuto ? `<span class="cr-badge">キャリアハイ</span>` : ""
             }</span>
             <span class="cr-stats">${statsHTML(s, slot.kind)}</span>
-            ${scaledNote(value)}
+            ${partsNote(s, slot.type)}${scaledNote(value)}
           </span>
           ${gradeHTML(value.rank, value.seasonWar === null ? null : value.war)}
         </button>

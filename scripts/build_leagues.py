@@ -8,8 +8,8 @@
     "bat": { "AB", "R", "H", "2B", "3B", "HR", "SB", ("PA", "BB", "HBP", "SF", "SH") },
     "pit": { "outs", "ER", "R", "SO", ("BB", "HBP", "HR", "H") },
   }
-  四球・死球・犠飛は、2005年以降だけ公式の表にある。それより前は、選手データ（data/players.json）の
-  その年・そのリーグの「打数あたりの四球・死球・犠飛」から推定して入れ、"estimated": true を付ける
+  四球・死球・犠飛・盗塁刺は、2005年以降だけ公式の表にある。それより前は、選手データ（data/players.json）の
+  その年・そのリーグの「打数あたりの四球・死球・犠飛」「盗塁あたりの盗塁刺」から推定して入れ、"estimated": true を付ける
   （2005年以降で試すと、推定と公式の差はおおむね ±5% 以内）。
 
 取得元：
@@ -40,6 +40,7 @@ OUT_PATH = ROOT / "data" / "leagues.json"
 PLAYERS_PATH = ROOT / "data" / "players.json"
 CENTRAL_WORDS = ["巨人", "阪神", "中日", "広島", "ヤクルト", "サンケイ", "アトムズ", "大洋", "横浜", "DeNA"]
 SHRINK_AB = 15000  # 推定のとき、選手データの打数が少ない年は、近い10年の平均に寄せる
+SHRINK_SB = 300  # 盗塁刺の推定で、選手データの盗塁が少ない年を寄せる強さ
 BASE = "https://npb.jp/"
 USER_AGENT = "baseball-draftdraft/0.1 (personal project)"
 YEAR_FROM, YEAR_TO = 1965, 2026
@@ -218,7 +219,7 @@ def sample_rates() -> dict[tuple[int, str], dict[str, int]]:
     """選手データの打撃成績を、年度・リーグごとに合計する（四球・死球・犠飛の推定に使う）。"""
     data = json.loads(PLAYERS_PATH.read_text(encoding="utf-8"))
     cols = data["meta"]["battingColumns"]
-    idx = {k: cols.index(k) for k in ("AB", "BB", "HBP", "SF")}
+    idx = {k: cols.index(k) for k in ("AB", "BB", "HBP", "SF", "SB", "CS")}
     out: dict[tuple[int, str], dict[str, int]] = {}
     for p in data["players"].values():
         for r in p.get("batting", []):
@@ -240,12 +241,17 @@ def estimate_walks(leagues: dict[str, dict]) -> None:
                 continue
             window = [rates.get((y, lg)) for y in range(year, year + 10) if y < DETAIL_FROM + 5]
             window = [w for w in window if w]
-            own = rates.get((year, lg), {"AB": 0, "BB": 0, "HBP": 0, "SF": 0})
+            own = rates.get((year, lg), {"AB": 0, "BB": 0, "HBP": 0, "SF": 0, "SB": 0, "CS": 0})
             pooled_ab = sum(w["AB"] for w in window) or 1
             for k in ("BB", "HBP", "SF"):
                 prior = sum(w[k] for w in window) / pooled_ab
                 rate = (own[k] + prior * SHRINK_AB) / (own["AB"] + SHRINK_AB)
                 x["bat"][k] = round(rate * x["bat"]["AB"])
+            # 盗塁刺は「盗塁1つあたり」で推定する（盗塁の数は公式の表にある）
+            pooled_sb = sum(w["SB"] for w in window) or 1
+            prior = sum(w["CS"] for w in window) / pooled_sb
+            rate = (own["CS"] + prior * SHRINK_SB) / (own["SB"] + SHRINK_SB)
+            x["bat"]["CS"] = round(rate * x["bat"]["SB"])
             x["estimated"] = True
 
 
@@ -266,7 +272,7 @@ def main() -> None:
         "meta": {
             "source": "NPB.jp 日本野球機構 年度別成績（https://npb.jp/bis/yearly/）",
             "generatedAt": dt.datetime.now(JST).replace(microsecond=0).isoformat(),
-            "note": "年度・リーグ別のチーム成績の合計。C=セ・リーグ、P=パ・リーグ。2005年より前の四球・死球・犠飛は選手データからの推定（estimated: true）。打席・犠打・盗塁刺などは 2005年以降のみ。",
+            "note": "年度・リーグ別のチーム成績の合計。C=セ・リーグ、P=パ・リーグ。2005年より前の四球・死球・犠飛・盗塁刺は選手データからの推定（estimated: true）。打席・犠打などは 2005年以降のみ。",
         },
         "leagues": leagues,
     }

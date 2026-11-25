@@ -66,11 +66,15 @@ PITCHING_COLUMNS = {
     "暴投": "WP", "ボーク": "BK", "失点": "R", "自責点": "ER", "防御率": "ERA", "WHIP": "WHIP",
 }
 # players.json に入れる列（この順で配列にする）
-BAT_KEYS = ["year", "team", "G", "PA", "AB", "R", "H", "2B", "3B", "HR", "TB", "RBI", "SB", "BB", "HBP", "SO", "SF", "AVG", "OBP", "SLG", "OPS"]
+BAT_KEYS = ["year", "team", "G", "PA", "AB", "R", "H", "2B", "3B", "HR", "TB", "RBI", "SB", "BB", "HBP", "SO", "SF", "AVG", "OBP", "SLG", "OPS", "CS", "GDP"]
 PIT_KEYS = ["year", "team", "G", "GS", "CG", "SHO", "W", "L", "SV", "HLD", "IP", "H", "HR", "BB", "HBP", "SO", "ER", "ERA", "WHIP"]
 
 # 守備成績の見出しの守備位置
 FIELD_POSITIONS = ["投手", "捕手", "一塁", "二塁", "三塁", "遊撃", "外野", "左翼", "中堅", "右翼"]
+# 年度別守備成績の列（捕手は 企図数・許盗塁・盗塁刺・捕逸 もある）
+FIELDING_COLUMNS = {"試合": "G", "刺殺": "PO", "補殺": "A", "失策": "E", "併殺": "DP", "企図数": "SBA", "盗塁刺": "CS", "捕逸": "PB"}
+FLD_KEYS = ["year", "team", "pos", "G", "PO", "A", "E", "DP", "SBA", "CS", "PB"]
+OUTFIELD_SPLIT = ("左翼", "中堅", "右翼")
 
 # NPB の球団（成績表の「球団」欄の表記）。ここにないもの（MLB など）は一軍成績として扱わない
 NPB_TEAM_WORDS = [
@@ -571,40 +575,79 @@ def parse_stat_tables(html: str, columns: dict[str, str], keys: list[str], unkno
     return rows_out
 
 
-def parse_fielding(html: str) -> dict[str, int]:
-    """守備位置 → 一軍の通算試合数"""
+def field_pos(text: str) -> str | None:
+    """見出しの守備位置をそろえる：「遊撃(SS)」→「遊撃」、「一塁手」→「一塁」。守備位置でなければ None。"""
+    t = re.sub(r"[（(].*$", "", text)
+    if t in FIELD_POSITIONS:
+        return t
+    if t.endswith("手") and t[:-1] in FIELD_POSITIONS:
+        return t[:-1]
+    return None
+
+
+def parse_fielding_years(html: str) -> list[dict]:
+    """年度別守備成績 → [{year, team, pos, G, PO, A, E, DP, SBA, CS, PB}]（NPB 一軍のみ）。
+
+    守備位置の見出し行（「遊撃」「中堅(CF)」など）と、その下の項目の見出し行（試合・刺殺…）で列を読む。
+    捕手のように表が2つに分かれていても、同じ年・球団・守備位置の行はまとめる。
+    「左翼・中堅・右翼」と「外野（合計）」の両方がある年は、合計の行を使わない（二重に数えないため）。
+    """
     if not html:
-        return {}
+        return []
     soup = bd.clean_soup(html)
-    games: Counter = Counter()
+    merged: dict[tuple, dict] = {}
     for table in soup.find_all("table"):
         grid = bd.table_grid(table)
         pos_of: dict[int, str] = {}
-        game_cols: dict[int, str] = {}
+        key_of: dict[int, tuple[str, str]] = {}
         year_col = team_col = None
         for row in grid:
             texts = [header_key(c) for c in row]
-            if any(t in FIELD_POSITIONS for t in texts):
-                pos_of = {i: t for i, t in enumerate(texts) if t in FIELD_POSITIONS}
+            positions = {i: field_pos(t) for i, t in enumerate(texts)}
+            if any(positions.values()):
+                pos_of = {i: p for i, p in positions.items() if p}
                 if "年度" in texts:
                     year_col = texts.index("年度")
                 if "球団" in texts:
                     team_col = texts.index("球団")
+                key_of = {}
                 continue
-            if pos_of and "試合" in texts:
-                game_cols = {i: pos_of[i] for i, t in enumerate(texts) if t == "試合" and i in pos_of}
+            if pos_of and any(t in FIELDING_COLUMNS for t in texts):
+                key_of = {i: (pos_of[i], FIELDING_COLUMNS[t]) for i, t in enumerate(texts) if i in pos_of and t in FIELDING_COLUMNS}
                 continue
-            if not game_cols or year_col is None:
+            if not key_of or year_col is None or year_col >= len(row):
                 continue
-            if year_col >= len(row) or not re.match(r"^\d{4}", bd.cell_text(row[year_col])):
+            ym = re.match(r"^(\d{4})", bd.cell_text(row[year_col]))
+            if not ym:
                 continue
-            if team_col is not None and team_col < len(row) and not is_npb_team(bd.cell_text(row[team_col])):
+            year = int(ym.group(1))
+            team = bd.cell_text(row[team_col]) if team_col is not None and team_col < len(row) else ""
+            if team and not is_npb_team(team, year):
                 continue
-            for i, pos in game_cols.items():
+            team = normalize_team(team)
+            vals: dict[str, dict] = {}
+            for i, (pos, key) in key_of.items():
                 if i < len(row):
                     n = number(bd.cell_text(row[i]))
                     if isinstance(n, int):
-                        games[pos] += n
+                        vals.setdefault(pos, {})[key] = n
+            for pos, v in vals.items():
+                if not v.get("G"):
+                    continue
+                rec = merged.setdefault((year, team, pos), {"year": year, "team": team, "pos": pos})
+                for k, n in v.items():
+                    rec.setdefault(k, n)
+    rows = list(merged.values())
+    split_years = {(r["year"], r["team"]) for r in rows if r["pos"] in OUTFIELD_SPLIT}
+    rows = [r for r in rows if not (r["pos"] == "外野" and (r["year"], r["team"]) in split_years)]
+    return sorted(rows, key=lambda r: (r["year"], r["team"], FIELD_POSITIONS.index(r["pos"])))
+
+
+def fielding_games(rows: list[dict]) -> dict[str, int]:
+    """守備位置 → 一軍の通算試合数（年度別守備成績の合計）"""
+    games: Counter = Counter()
+    for r in rows:
+        games[r["pos"]] += r.get("G") or 0
     return dict(games)
 
 
@@ -674,13 +717,15 @@ def main(argv=None) -> int:
             rec["profile"] = profile
         batting = parse_stat_tables(tables.get("bat", ""), BATTING_COLUMNS, BAT_KEYS, unknown_teams)
         pitching = parse_stat_tables(tables.get("pit", ""), PITCHING_COLUMNS, PIT_KEYS, unknown_teams)
-        fielding = parse_fielding(tables.get("fld", ""))
+        fielding_years = parse_fielding_years(tables.get("fld", ""))
+        fielding = fielding_games(fielding_years)
         if batting:
             rec["batting"] = compact(batting, BAT_KEYS)
         if pitching:
             rec["pitching"] = compact(pitching, PIT_KEYS)
         if fielding:
             rec["fielding"] = fielding
+            rec["fieldingYears"] = compact(fielding_years, FLD_KEYS)
         titles_ = parse_honors(text, "タイトル")
         awards = parse_honors(text, "表彰")
         if titles_:
@@ -705,7 +750,8 @@ def main(argv=None) -> int:
             "generatedAt": generated_at,
             "battingColumns": BAT_KEYS,
             "pitchingColumns": PIT_KEYS,
-            "note": "成績は NPB の一軍のみ。各行の最後の配列は、リーグ1位（記事で太字）の列の番号",
+            "fieldingColumns": FLD_KEYS,
+            "note": "成績は NPB の一軍のみ。各行の最後の配列は、リーグ1位（記事で太字）の列の番号。fieldingYears は年度・球団・守備位置ごとの守備成績（SBA=盗塁企図数、CS=盗塁刺、PB=捕逸。捕手のみ）",
         },
         "players": players,
     }

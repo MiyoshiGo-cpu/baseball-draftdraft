@@ -4,7 +4,7 @@
 import { $, esc } from "../dom.js";
 import { app, loadPlayers } from "../app.js";
 import { battingTotals, fmtEra, fmtInt, fmtRate, pitchingTotals, positionGames, rowObject, throwsBats } from "../stats.js";
-import { battingWar, fmtWar, pitchingWar } from "../war.js";
+import { battingWarParts, fmtWar, fmtWarSigned, pitchingWar } from "../war.js";
 import { sfx, unlockAudio } from "../sound.js";
 
 let currentKey = null;
@@ -65,6 +65,23 @@ function totalWar(rows) {
   return vals.length ? vals.reduce((a, b) => a + b, 0) : null;
 }
 
+/** 打者の WAR の内訳（通算、勝ち数） */
+function warPartsHTML(rows) {
+  const parts = rows.map((r) => r.warParts).filter(Boolean);
+  if (!parts.length) return "";
+  const sum = (k) => parts.reduce((a, p) => a + p[k] / p.rpw, 0);
+  const items = [
+    ["打撃", sum("batting")],
+    ["走塁", sum("baserunning")],
+    ["守備", sum("fielding")],
+    ["守備位置", sum("position")],
+    ["控えとの差", sum("replacement")],
+  ];
+  return `<p class="pl-war-parts"><span class="pl-war-parts-label">WAR の内訳（通算）</span>${items
+    .map(([k, v]) => `<span>${k} <b>${fmtWarSigned(v)}</b></span>`)
+    .join("")}</p>`;
+}
+
 function battingHTML(rows) {
   const t = battingTotals(rows);
   const lead = (r, k, text) => (r.lead.has(k) ? `<b class="is-lead">${text}</b>` : text);
@@ -93,7 +110,9 @@ function battingHTML(rows) {
       ["盗塁", fmtInt(t.SB)],
       ["OPS", fmtRate(t.OPS)],
       ["WAR", fmtWar(totalWar(rows))],
-    ]) + table,
+    ]) +
+      warPartsHTML(rows) +
+      table,
   );
 }
 
@@ -153,7 +172,10 @@ function bodyHTML(pick, player) {
   const bat = (player.batting || []).map((r) => rowObject(r, cols.battingColumns));
   const pit = (player.pitching || []).map((r) => rowObject(r, cols.pitchingColumns));
   if (app.leagues) {
-    for (const r of bat) r.WAR = battingWar(r, app.leagues, player);
+    for (const r of bat) {
+      r.warParts = battingWarParts(r, app.leagues, player, app.players);
+      r.WAR = r.warParts ? r.warParts.war : null;
+    }
     for (const r of pit) r.WAR = pitchingWar(r, app.leagues);
   }
   const statBlocks = [];
