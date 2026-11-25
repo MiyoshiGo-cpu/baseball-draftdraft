@@ -4,6 +4,7 @@
 import { $, esc } from "../dom.js";
 import { app, loadPlayers } from "../app.js";
 import { battingTotals, fmtEra, fmtInt, fmtRate, pitchingTotals, positionGames, rowObject, throwsBats } from "../stats.js";
+import { battingWar, fmtWar, pitchingWar } from "../war.js";
 import { sfx, unlockAudio } from "../sound.js";
 
 let currentKey = null;
@@ -58,18 +59,25 @@ function tiles(items) {
     .join("")}</div>`;
 }
 
+/** 行ごとの WAR の合計（計算できない行は除く）。どの行も計算できなければ null。 */
+function totalWar(rows) {
+  const vals = rows.map((r) => r.WAR).filter((w) => typeof w === "number");
+  return vals.length ? vals.reduce((a, b) => a + b, 0) : null;
+}
+
 function battingHTML(rows) {
   const t = battingTotals(rows);
   const lead = (r, k, text) => (r.lead.has(k) ? `<b class="is-lead">${text}</b>` : text);
   const table = `
     <div class="pl-table-wrap"><table class="pl-table">
-      <thead><tr><th>年</th><th class="pl-team">球団</th><th>試合</th><th>打率</th><th>本</th><th>打点</th><th>盗塁</th><th>OPS</th></tr></thead>
+      <thead><tr><th>年</th><th class="pl-team">球団</th><th>試合</th><th>打率</th><th>本</th><th>打点</th><th>盗塁</th><th>OPS</th><th>WAR</th></tr></thead>
       <tbody>${rows
         .map(
           (r) => `<tr>
             <td>${r.year}</td><td class="pl-team">${esc(r.team)}</td>
             <td>${lead(r, "G", fmtInt(r.G))}</td><td>${lead(r, "AVG", fmtRate(r.AVG))}</td><td>${lead(r, "HR", fmtInt(r.HR))}</td>
             <td>${lead(r, "RBI", fmtInt(r.RBI))}</td><td>${lead(r, "SB", fmtInt(r.SB))}</td><td>${lead(r, "OPS", fmtRate(r.OPS))}</td>
+            <td class="pl-war">${fmtWar(r.WAR)}</td>
           </tr>`,
         )
         .join("")}</tbody>
@@ -84,7 +92,7 @@ function battingHTML(rows) {
       ["打点", fmtInt(t.RBI)],
       ["盗塁", fmtInt(t.SB)],
       ["OPS", fmtRate(t.OPS)],
-      ["打席", fmtInt(t.PA)],
+      ["WAR", fmtWar(totalWar(rows))],
     ]) + table,
   );
 }
@@ -94,7 +102,7 @@ function pitchingHTML(rows) {
   const lead = (r, k, text) => (r.lead.has(k) ? `<b class="is-lead">${text}</b>` : text);
   const table = `
     <div class="pl-table-wrap"><table class="pl-table">
-      <thead><tr><th>年</th><th class="pl-team">球団</th><th>登板</th><th>勝</th><th>敗</th><th>S</th><th>H</th><th>防御率</th><th>投球回</th><th>三振</th></tr></thead>
+      <thead><tr><th>年</th><th class="pl-team">球団</th><th>登板</th><th>勝</th><th>敗</th><th>S</th><th>H</th><th>防御率</th><th>投球回</th><th>三振</th><th>WAR</th></tr></thead>
       <tbody>${rows
         .map(
           (r) => `<tr>
@@ -102,6 +110,7 @@ function pitchingHTML(rows) {
             <td>${lead(r, "G", fmtInt(r.G))}</td><td>${lead(r, "W", fmtInt(r.W))}</td><td>${fmtInt(r.L)}</td>
             <td>${lead(r, "SV", r.SV === null ? "-" : fmtInt(r.SV))}</td><td>${lead(r, "HLD", r.HLD === null ? "-" : fmtInt(r.HLD))}</td>
             <td>${lead(r, "ERA", fmtEra(r.ERA))}</td><td>${r.IP ?? "-"}</td><td>${lead(r, "SO", fmtInt(r.SO))}</td>
+            <td class="pl-war">${fmtWar(r.WAR)}</td>
           </tr>`,
         )
         .join("")}</tbody>
@@ -111,12 +120,12 @@ function pitchingHTML(rows) {
     tiles([
       ["登板", fmtInt(t.G)],
       ["勝利", fmtInt(t.W)],
-      ["敗戦", fmtInt(t.L)],
       ["セーブ", t.SV === null ? "-" : fmtInt(t.SV)],
       ["ホールド", t.HLD === null ? "-" : fmtInt(t.HLD)],
       ["防御率", fmtEra(t.ERA)],
       ["投球回", t.IP],
       ["奪三振", fmtInt(t.SO)],
+      ["WAR", fmtWar(totalWar(rows))],
     ]) + table,
   );
 }
@@ -143,6 +152,10 @@ function bodyHTML(pick, player) {
   const cols = app.players.meta;
   const bat = (player.batting || []).map((r) => rowObject(r, cols.battingColumns));
   const pit = (player.pitching || []).map((r) => rowObject(r, cols.pitchingColumns));
+  if (app.leagues) {
+    for (const r of bat) r.WAR = battingWar(r, app.leagues, player);
+    for (const r of pit) r.WAR = pitchingWar(r, app.leagues);
+  }
   const statBlocks = [];
   // 登録が投手の選手は投手成績を先に
   const order = pick.group === "P" ? [pit.length && pitchingHTML(pit), bat.length && battingHTML(bat)] : [bat.length && battingHTML(bat), pit.length && pitchingHTML(pit)];
@@ -155,7 +168,7 @@ function bodyHTML(pick, player) {
     ${statBlocks.join("")}
     ${honorsHTML(player)}
     <a class="btn btn-wide pl-wiki" href="${url}" target="_blank" rel="noopener">Wikipedia で詳しく見る</a>
-    <p class="pl-credit">出典：Wikipedia日本語版「${esc(player.title)}」（CC BY-SA 4.0）。成績は NPB の一軍のみで、太字の赤はリーグ1位です。</p>`;
+    <p class="pl-credit">出典：Wikipedia日本語版「${esc(player.title)}」（CC BY-SA 4.0）。成績は NPB の一軍のみで、太字の赤はリーグ1位です。WAR はこのアプリが成績とリーグ平均（NPB.jp）から計算した目安です。</p>`;
 }
 
 /** pickId（例：2012-fighters-01）の選手の詳細を開く。 */

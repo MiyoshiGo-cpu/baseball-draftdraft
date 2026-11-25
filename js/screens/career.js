@@ -1,9 +1,9 @@
-// 答え合わせ（完成画面と保存したチームの画面）：各選手のキャリアハイと、チームの総合力。
+// 答え合わせ（完成画面と保存したチームの画面）：各選手のキャリアハイと、チームの総合力（簡易 WAR）。
 // 選手をタップすると年度を選ぶシートが開き、ほかの年度に選び直せる。
 
 import { $, esc } from "../dom.js";
 import { app, loadPlayers } from "../app.js";
-import { AUTO_RULE, careerTeam, seasonScore, rankOf, statLine } from "../career.js";
+import { AUTO_RULE, RELIEF_IP, careerTeam, fmtWar, seasonValue, statLine } from "../career.js";
 import { KIND_LABELS, POSITION_NAMES } from "../game.js";
 import { fmtEra, fmtInt, fmtRate } from "../stats.js";
 import { sfx, unlockAudio } from "../sound.js";
@@ -26,8 +26,14 @@ function statsHTML(season, kind) {
     .join("");
 }
 
-function gradeHTML(rank, score) {
-  return `<span class="grade grade-${rank}"><b>${rank}</b><small>${score}</small></span>`;
+/** ランク（S〜E）と WAR の札 */
+function gradeHTML(rank, war) {
+  return `<span class="grade grade-${rank}"><b>${rank}</b><small>${war === null ? "-" : fmtWar(war)}</small></span>`;
+}
+
+/** 中継ぎ・抑えの枠で割り引いたときの注記 */
+function scaledNote(value) {
+  return value.scaled ? `<span class="cr-note">シーズン WAR ${fmtWar(value.seasonWar)} を${RELIEF_IP}回分に換算</span>` : "";
 }
 
 function slotLabelHTML(slot) {
@@ -40,7 +46,7 @@ function slotLabelHTML(slot) {
 function rowHTML(slot, editable) {
   const p = slot.player;
   if (!p) {
-    return `<li><div class="cr-row is-empty">${slotLabelHTML(slot)}<span class="cr-main"><span class="cr-empty">空き</span></span>${gradeHTML("E", 0)}<span></span></div></li>`;
+    return `<li><div class="cr-row is-empty">${slotLabelHTML(slot)}<span class="cr-main"><span class="cr-empty">空き</span></span>${gradeHTML("E", null)}<span></span></div></li>`;
   }
   const s = slot.season;
   const year = s
@@ -53,21 +59,23 @@ function rowHTML(slot, editable) {
       <span class="cr-name">${esc(p.name)}</span>
       ${year}
       ${s ? `<span class="cr-stats">${statsHTML(s, slot.kind)}</span>` : ""}
+      ${scaledNote(slot)}
     </span>
-    ${gradeHTML(slot.rank, slot.score)}`;
+    ${gradeHTML(slot.rank, slot.season ? slot.war : null)}`;
   if (editable && slot.seasons.length) {
     return `<li><button type="button" class="cr-row" data-season="${esc(p.pickId)}" aria-label="${esc(p.name)}の年度を選び直す">${inner}<span class="cr-chev">${chevron}</span></button></li>`;
   }
   return `<li><div class="cr-row">${inner}<span></span></div></li>`;
 }
 
-function barHTML(label, part) {
+/** 打線・投手陣の WAR の棒（full は棒がいっぱいになる WAR） */
+function barHTML(label, part, full, cls) {
+  const width = Math.max(2, Math.min(100, (part.war / full) * 100));
   return `
     <div class="cbar">
       <span class="cbar-label">${label}</span>
-      <span class="cbar-track"><span class="cbar-fill grade-bg-${part.rank}" style="width:${Math.max(2, part.score)}%"></span></span>
-      <b class="cbar-score">${part.score}</b>
-      <span class="grade grade-${part.rank} grade-small"><b>${part.rank}</b></span>
+      <span class="cbar-track"><span class="cbar-fill ${cls}" style="width:${width}%"></span></span>
+      <b class="cbar-score">${fmtWar(part.war)}</b>
     </div>`;
 }
 
@@ -94,17 +102,21 @@ export function careerHTML(result, { editable = true } = {}) {
     <div class="career-band">
       <p class="career-kicker">ANSWER CHECK</p>
       <h2 class="career-title">答え合わせ${result.complete ? "" : "（未完成）"}</h2>
-      <p class="career-lead">指名した選手のキャリアハイで、チームを採点しました。</p>
+      <p class="career-lead">指名した選手のキャリアハイの WAR で、チームの強さを予想しました。</p>
     </div>
     <div class="career-score">
-      <div class="rank-emblem rank-${total.rank}" aria-label="総合力 ${total.rank}ランク ${total.score}点">
+      <div class="rank-emblem rank-${total.rank}" aria-label="総合力 ${total.rank}ランク、予想 ${total.wins}勝">
         <span class="re-label">総合力</span>
         <span class="re-rank">${total.rank}</span>
-        <span class="re-score">${total.score}<small>/100</small></span>
+        <span class="re-score">${total.wins}<small>勝</small></span>
       </div>
-      <div class="career-bars">
-        ${barHTML("打線", result.batting)}
-        ${barHTML("投手陣", result.pitching)}
+      <div class="career-score-main">
+        <p class="career-record">予想 <b>${total.wins}</b>勝<b>${total.losses}</b>敗<span class="career-label">${esc(total.label)}</span></p>
+        <p class="career-war">チーム WAR <b>${fmtWar(total.war)}</b></p>
+        <div class="career-bars">
+          ${barHTML("打線", result.batting, 40, "cbar-bat")}
+          ${barHTML("投手陣", result.pitching, 25, "cbar-pit")}
+        </div>
       </div>
     </div>
     ${sumsHTML(result.sums)}
@@ -116,12 +128,14 @@ export function careerHTML(result, { editable = true } = {}) {
     <h3 class="team-sub">投手陣</h3>
     <ul class="cr-list">${rows(["SP", "RP", "CL"])}</ul>
     <details class="career-rule">
-      <summary>採点のしかた</summary>
+      <summary>WAR と採点のしかた</summary>
       <ul>
-        <li>年度は、枠ごとに各選手のキャリアハイを自動で選びます。スタメン・控えは規定打席に届いた年で OPS が最も高い年（届いた年がなければ打席数が最も多い年）、先発は勝利数、中継ぎはセーブとホールドの合計（記録がない時代は登板数）、抑えはセーブ（記録がない時代は登板数）が最も多い年です。</li>
-        <li>選手の点数（0〜100）は、打者は OPS と打席数、先発は防御率・勝利数・投球回、中継ぎと抑えは防御率・セーブとホールド・登板数から計算します。S は MVP 級、A はタイトル争い級の成績です。</li>
-        <li>総合力は17人の点数の平均です（スタメンと先発を重く、控えを軽く数えます）。投手の枠に一軍の投手成績がない選手を入れると、その枠は0点です（打者の枠も同じ）。</li>
-        <li>成績は NPB の一軍のみで、Wikipedia 日本語版の各選手の記事から作っています。赤の太字はリーグ1位です。</li>
+        <li><b>WAR</b> は「控えレベルの選手と比べて、その年に何勝ぶん上積みしたか」です。公式の NPB の WAR は公開されていないので、このアプリが成績から計算した目安です。その年のリーグ平均と比べるので、投高打低などの時代の差は補正されます。</li>
+        <li>打者は、打撃（出塁と長打の価値）、守備位置（捕手・遊撃は加点、一塁は減点）、出場の多さから計算します。守備の上手さ・走塁・球場の違いは入りません。投手は、防御率がリーグ平均よりどれだけ良いかと投球回から計算し、接戦の終盤に投げた救援（セーブ・ホールド）は少し重く数えます。</li>
+        <li>年度は、その枠での WAR が最も高い年を自動で選びます（打者の枠は打撃、投手の枠は投手の WAR）。中継ぎ・抑えの枠は投げる回数が少ないので、${RELIEF_IP}回を超える年は${RELIEF_IP}回分に割り引いて数えます。投手の枠に一軍の投手成績がない選手を入れると、その枠は0です（打者の枠も同じ）。</li>
+        <li>ランクは、選手は WAR 7以上で S（MVP 級）、5以上で A、3以上で B、2以上で C、1以上で D です。中継ぎ・抑えは 3.5・2.5・1.5・1・0.5 で区切ります。</li>
+        <li>チームは、17人の WAR の合計（控えは出場が少ないので 1/4）に、控えレベルの選手だけのチームの勝ち数（143試合で42勝）を足して、予想勝利数を出します。100勝以上で S、90勝以上で A、82勝以上で B、74勝以上で C、66勝以上で D です。</li>
+        <li>成績は NPB の一軍のみで、Wikipedia 日本語版の各選手の記事から、リーグ平均は NPB.jp の年度別成績から作っています。赤の太字はリーグ1位です。</li>
       </ul>
     </details>`;
 }
@@ -130,7 +144,7 @@ function render(rootId) {
   const m = mounts.get(rootId);
   const root = $(rootId);
   if (!m || !root) return;
-  m.result = careerTeam(m.snapshot, app.players);
+  m.result = careerTeam(m.snapshot, app.players, app.leagues);
   root.innerHTML = careerHTML(m.result, { editable: Boolean(m.onChange) });
   m.onRender?.(m.result);
 }
@@ -194,7 +208,7 @@ function openSeasonSheet(rootId, pickId) {
   $("sd-meta").textContent = `${where}の年度を選ぶ`;
   $("sd-rule").textContent = `自動で選ぶ年度：${AUTO_RULE[slot.kind]}`;
   const options = [...slot.seasons].reverse().map((s) => {
-    const score = seasonScore(s, slot.kind);
+    const value = seasonValue(s, slot.kind);
     const selected = s.year === slot.year;
     const isAuto = s.year === slot.autoYear;
     return `
@@ -206,8 +220,9 @@ function openSeasonSheet(rootId, pickId) {
               isAuto ? `<span class="cr-badge">キャリアハイ</span>` : ""
             }</span>
             <span class="cr-stats">${statsHTML(s, slot.kind)}</span>
+            ${scaledNote(value)}
           </span>
-          ${gradeHTML(rankOf(score), score)}
+          ${gradeHTML(value.rank, value.seasonWar === null ? null : value.war)}
         </button>
       </li>`;
   });

@@ -504,8 +504,26 @@ def header_key(cell) -> str:
     return re.sub(r"[丨｜|]", "ー", text)
 
 
-def is_npb_team(team: str) -> bool:
+# NPB の球団名を含むが、海外の球団の表記（KBO のロッテ・ジャイアンツと青宝・太平洋、CPBL の楽天モンキーズ）
+NON_NPB_TEAM_RE = re.compile(r"KBO|CPBL|青宝|ロッテ[（(]?G[)）]?$|楽天M$")
+# NPB にその名前の球団があった年（KBO に同じ名前の球団があるもの）
+NPB_TEAM_YEARS = {"太平洋": (1973, 1976)}
+
+
+def is_npb_team(team: str, year: int | None = None) -> bool:
+    if NON_NPB_TEAM_RE.search(team):
+        return False
+    if year is not None and team in NPB_TEAM_YEARS:
+        lo, hi = NPB_TEAM_YEARS[team]
+        if not lo <= year <= hi:
+            return False
     return any(w in team for w in NPB_TEAM_WORDS)
+
+
+def normalize_team(team: str) -> str:
+    """「ロッテ(O)」「ロッテ(M)」「楽天E」のような、海外の同名球団と区別するための印を外す。"""
+    team = re.sub(r"[（(][OM][)）]$", "", team)
+    return re.sub(r"^楽天E$", "楽天", team)
 
 
 def parse_stat_tables(html: str, columns: dict[str, str], keys: list[str], unknown_teams: Counter) -> list[dict]:
@@ -534,10 +552,10 @@ def parse_stat_tables(html: str, columns: dict[str, str], keys: list[str], unkno
             if not ym:
                 continue  # 通算などの行
             team = bd.cell_text(row[colmap["team"]]) if "team" in colmap and colmap["team"] < len(row) else ""
-            if team and not is_npb_team(team):
+            if team and not is_npb_team(team, int(ym.group(1))):
                 unknown_teams[team] += 1
                 continue
-            rec = {"year": int(ym.group(1)), "team": team}
+            rec = {"year": int(ym.group(1)), "team": normalize_team(team)}
             lead = []
             for k, i in colmap.items():
                 if k in ("year", "team") or i >= len(row):
