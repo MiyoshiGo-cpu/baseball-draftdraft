@@ -3629,6 +3629,29 @@ dialog.sheet[open] {
   color: var(--muted);
 }
 
+.pl-war-parts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--bg-soft);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.pl-war-parts-label {
+  flex-basis: 100%;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--navy);
+}
+
+.pl-war-parts b {
+  font-variant-numeric: tabular-nums;
+}
+
 .pl-table .pl-war {
   font-weight: 800;
   color: var(--navy);

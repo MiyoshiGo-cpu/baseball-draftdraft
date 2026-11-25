@@ -59,6 +59,21 @@ test("雄平（高井雄平として指名）：投手と外野手の両方の�
   assert.ok(p.fielding["外野"] > p.fielding["投手"]);
 });
 
+test("年度別守備成績：「遊撃(SS)」のような見出しも読み、外野の合計と左翼・中堅・右翼を二重に数えない", () => {
+  const cols = data.meta.fieldingColumns;
+  assert.deepEqual(cols.slice(0, 4), ["year", "team", "pos", "G"]);
+  const shinjo = data.players["新庄剛志"];
+  assert.ok(shinjo.fielding["中堅"] > 1000, JSON.stringify(shinjo.fielding));
+  assert.equal(shinjo.fielding["外野"], undefined);
+  const furuta = data.players["古田敦也"].fieldingYears.find((r) => r[0] === 1993);
+  assert.equal(furuta[cols.indexOf("pos")], "捕手");
+  assert.ok(furuta[cols.indexOf("CS")] > 0 && furuta[cols.indexOf("SBA")] > furuta[cols.indexOf("CS")]);
+  for (const p of Object.values(data.players)) for (const r of p.fieldingYears || []) assert.equal(r.length, cols.length);
+  // 盗塁死・併殺打の列
+  assert.ok(BAT.includes("CS") && BAT.includes("GDP"));
+  assert.equal(bat("福本豊").find((r) => r.year === 1972).SB, 106);
+});
+
 test("セーブとホールド（縦書きの見出し「セ丨ブ」「ホ丨ルド」）を読み取れている", () => {
   assert.equal(pit("岩瀬仁紀").find((r) => r.year === 2005).SV, 46);
   assert.equal(pit("浅尾拓也").find((r) => r.year === 2011).HLD, 45);

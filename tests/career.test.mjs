@@ -88,8 +88,8 @@ test("ランクの区切り", () => {
   assert.equal(rankOf(3.0, PLAYER_RANKS), "B");
   assert.equal(rankOf(-0.5, PLAYER_RANKS), "E");
   assert.equal(rankOf(2.6, RELIEF_RANKS), "A");
-  assert.equal(rankOf(100, TEAM_RANKS), "S");
-  assert.equal(rankOf(83, TEAM_RANKS), "B");
+  assert.equal(rankOf(104, TEAM_RANKS), "S");
+  assert.equal(rankOf(86, TEAM_RANKS), "B");
   assert.equal(rankOf(50, TEAM_RANKS), "E");
   assert.equal(REPLACEMENT_WINS, 42);
 });
@@ -98,7 +98,9 @@ test("実データ：よく知られたキャリアハイを選ぶ", () => {
   const matsui = auto("松井秀喜", "lineup");
   assert.equal(matsui.year, 2002);
   assert.ok(matsui.WAR > 9, `松井 2002 の WAR ${matsui.WAR}`);
-  assert.equal(auto("糸井嘉男", "lineup").year, 2014);
+  const itoi = auto("糸井嘉男", "lineup");
+  assert.ok(itoi.WAR >= seasons("糸井嘉男", "lineup").find((x) => x.year === 2014).WAR, "首位打者の2014年以上の年");
+  assert.ok(itoi.warParts.fielding !== 0 && itoi.warParts.baserunning !== 0, "守備と走塁も入っている");
   const tanaka = auto("田中将大", "SP");
   assert.equal(tanaka.year, 2013);
   assert.equal(statText(tanaka, "SP").split(" ")[0], "24勝0敗");
@@ -146,7 +148,7 @@ test("チームの答え合わせ：WAR の合計と予想勝利数、年度の�
   assert.equal(r.total.wins, Math.round(42 + r.total.war));
   assert.equal(r.total.wins + r.total.losses, 143);
   assert.ok(Math.abs(r.batting.war + r.pitching.war - r.total.war) < 1e-9);
-  assert.equal(r.sums.HR, 50 + 19);
+  assert.equal(r.sums.HR, r.slots[0].season.HR + r.slots[1].season.HR);
 
   const r2 = careerTeam({ ...snap, careerYears: { a: 1996, b: 1900 } }, players, leagues);
   assert.equal(r2.slots[0].year, 1996);

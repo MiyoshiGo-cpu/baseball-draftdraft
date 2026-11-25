@@ -50,6 +50,19 @@ export function rowObject(arr, columns) {
   return obj;
 }
 
+/** その年のおおよその試合数（1球団あたり。規定打席や守備の「レギュラー」の目安に使う）。 */
+export function seasonGames(year) {
+  if (year <= 1965) return 140;
+  if (year <= 1996) return 130;
+  if (year <= 2000) return 135;
+  if (year <= 2003) return 140;
+  if (year === 2004) return 138;
+  if (year <= 2006) return 146;
+  if (year <= 2014) return 144;
+  if (year === 2020) return 120;
+  return 143;
+}
+
 /** 投球回 "206.2"（.1=1/3回, .2=2/3回）→ アウト数 */
 export function ipToOuts(ip) {
   if (ip === null || ip === undefined) return 0;

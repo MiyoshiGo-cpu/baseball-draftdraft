@@ -8,8 +8,8 @@
 // チームの総合力：17人の WAR の合計（控えは出場が少ないので 1/4）に、控えレベルの選手だけのチームの勝ち数
 //   （143試合×.294＝42勝）を足して「予想勝利数」にする。
 
-import { battingTotals, fmtEra, fmtRate, outsToIp, pitchingTotals, rowObject } from "./stats.js";
-import { battingWar, fmtWar, pitchingWar } from "./war.js";
+import { battingTotals, fmtEra, fmtRate, outsToIp, pitchingTotals, rowObject, seasonGames } from "./stats.js";
+import { battingWarParts, fmtWar, pitchingWar } from "./war.js";
 
 /** 枠の種類 → 使う成績（bat: 打撃、pit: 投手） */
 export const SEASON_TYPE = { lineup: "bat", bench: "bat", SP: "pit", RP: "pit", CL: "pit" };
@@ -45,11 +45,11 @@ export const RELIEF_RANKS = [
   ["E", -Infinity],
 ];
 export const TEAM_RANKS = [
-  ["S", 100],
-  ["A", 90],
-  ["B", 82],
-  ["C", 74],
-  ["D", 66],
+  ["S", 104],
+  ["A", 94],
+  ["B", 85],
+  ["C", 77],
+  ["D", 69],
   ["E", -Infinity],
 ];
 /** チームのランクのひとこと */
@@ -63,18 +63,8 @@ export function rankOf(value, table = PLAYER_RANKS) {
 /** 枠に合わせたランクの区切り */
 export const ranksFor = (kind) => (kind === "RP" || kind === "CL" ? RELIEF_RANKS : PLAYER_RANKS);
 
-/** その年のおおよその試合数（規定打席・規定投球回の目安に使う）。 */
-export function seasonGames(year) {
-  if (year <= 1965) return 140;
-  if (year <= 1996) return 130;
-  if (year <= 2000) return 135;
-  if (year <= 2003) return 140;
-  if (year === 2004) return 138;
-  if (year <= 2006) return 146;
-  if (year <= 2014) return 144;
-  if (year === 2020) return 120;
-  return 143;
-}
+/** その年のおおよその試合数（stats.js）。規定打席・規定投球回の目安に使う。 */
+export { seasonGames };
 
 /** 規定打席（試合数×3.1） */
 export const qualifyingPA = (year) => Math.floor(seasonGames(year) * 3.1);
@@ -111,6 +101,15 @@ function sumWar(rows) {
   return vals.length ? vals.reduce((a, b) => a + b, 0) : null;
 }
 
+/** 打者の WAR の内訳（勝ち数）を足す。{ batting, baserunning, fielding, position, replacement } */
+function sumParts(rows) {
+  const parts = rows.map((r) => r.warParts).filter(Boolean);
+  if (!parts.length) return null;
+  const out = { batting: 0, baserunning: 0, fielding: 0, position: 0, replacement: 0 };
+  for (const p of parts) for (const k of Object.keys(out)) out[k] += p[k];
+  return out;
+}
+
 /** 打撃成績の行（rowObject 済み。WAR が付いていれば足す）→ 年度ごとの成績。 */
 export function battingSeasons(rows) {
   return groupByYear(rows).map(([year, rs]) => {
@@ -119,7 +118,7 @@ export function battingSeasons(rows) {
     // 1行だけなら記事の値（四捨五入済み）をそのまま使う
     for (const k of ["AVG", "OBP", "SLG", "OPS"]) if (one && num(one[k]) !== null) t[k] = one[k];
     if (t.PA === 0 && t.AB > 0) t.PA = t.AB + t.BB + t.HBP + t.SF;
-    return { ...t, year, team: mergeTeams(rs), lead: mergeLead(rs), WAR: sumWar(rs) };
+    return { ...t, year, team: mergeTeams(rs), lead: mergeLead(rs), WAR: sumWar(rs), warParts: sumParts(rs) };
   });
 }
 
@@ -144,7 +143,16 @@ export function playerSeasons(playersJson, playerKey, type, leaguesJson = null) 
   const { battingColumns, pitchingColumns } = playersJson.meta;
   if (type === "bat") {
     const rows = (p.batting || []).map((r) => rowObject(r, battingColumns));
-    if (leaguesJson) for (const r of rows) r.WAR = battingWar(r, leaguesJson, p);
+    if (leaguesJson) {
+      for (const r of rows) {
+        const parts = battingWarParts(r, leaguesJson, p, playersJson);
+        r.WAR = parts ? parts.war : null;
+        if (parts) {
+          const w = (x) => x / parts.rpw;
+          r.warParts = { batting: w(parts.batting), baserunning: w(parts.baserunning), fielding: w(parts.fielding), position: w(parts.position), replacement: w(parts.replacement) };
+        }
+      }
+    }
     return battingSeasons(rows);
   }
   const rows = (p.pitching || []).map((r) => rowObject(r, pitchingColumns));
